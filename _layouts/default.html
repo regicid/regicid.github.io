@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<script type="text/javascript" async
-  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>
 <head>
     <title>{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}</title>
 
@@ -19,14 +16,14 @@
         {% assign desc = site.description %}
     {% endif %}
     {% if page.url %}
-        {% assign url = site.github.url  | append: site.baseurl | append: page.url %}
+        {% assign url = site.url | append: site.baseurl | append: page.url %}
     {% else %}
-        {% assign url = site.github.url  | append: site.baseurl | append: page.url %}
+        {% assign url = site.url | append: site.baseurl | append: page.url %}
     {% endif %}
     <meta name="description" content="{{ desc }}">
     <link href='https://fonts.googleapis.com/css?family=Inconsolata:400,700' rel='stylesheet' type='text/css'>
     <link rel="alternate" type="application/rss+xml" title="{{ site.title }} RSS" href="/feed.xml" />
-    <link rel="stylesheet" href="{{ site.github.url  }}{{ site.baseurl }}/css/main.css">
+    <link rel="stylesheet" href="{{ site.baseurl }}/css/main.css">
     {% if site.favicon %}
         <link rel="icon" type="image/ico" href="{{ site.favicon_location }}">
         <link rel="shortcut-icon" type="image/ico" href="{{ site.favicon_location }}">
@@ -59,15 +56,18 @@
 <body>
     <div class="wrapper">
         <div class="navbar container">
-            <a id="author-name" class="alignable pull-left" href="{{ site.github.url  }}{{ site.baseurl }}">{{ site.title }}</a>
-            <ul class="alignable pull-right navbar-ul">
-                {% for x in site.data.nav %}
+            {% if site.ins_logo %}
+                <img id="ins-logo" src="{{ site.ins_logo }}" />
+            {% endif %}
+            <a id="author-name" class="alignable pull-left" href="{{ site.baseurl }}">{{ site.title }}</a>
+            <ul id="navlist" class="alignable pull-right navbar-ul">
+                {% for x in site.nav %}
                     {% if x.name == "Resume" %}
-                        <li class="alignable pull-right nav-list"><a target="_blank" href="{{ x.link }}">{{ x.name }}</a>
+                        <li class="alignable pull-left nav-list"><a target="_blank" href="{{ x.link }}">{{ x.name }}</a>
                     {% else %}
-                        <li class="alignable pull-right nav-list"><a href="{{ x.link }}">{{ x.name }}</a>
+                        <li class="alignable pull-left nav-list"><a href="{{ x.link }}">{{ x.name }}</a>
                     {% endif %}
-                    {% if forloop.first == false %}
+                    {% if forloop.last == false %}
                         /
                     {% endif %}
                         </li>
@@ -78,13 +78,17 @@
         <hr>
         {% if page.is_contact == true %}
             <div class="container content contact">
-                {{ content }}
-            </div>
         {% else %}
             <div class="container content">
-                {{ content }}
-            </div>
         {% endif %}
+                {{ content }}
+                {% if site.footer == true %}
+                    <hr />
+                    <p style="text-align: center; margin-bottom: 10px">
+                    <a href="{{ site.footer_url }}" style="color: black"><small>{{ site.footer_text }}</small></a>
+                    </p>
+                {% endif %}
+            </div>
     </div>
     {% if site.tracking_id %}
         <script>
@@ -96,5 +100,6 @@
           ga('send', 'pageview');
         </script>
     {% endif %}
-    <div id="nothing"></div>
 </body>
+<footer>
+</footer>
