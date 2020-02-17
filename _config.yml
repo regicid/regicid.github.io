@@ -16,6 +16,8 @@ nav:
    link: "CV.pdf"
  - name: "Contact"
    link: "contact"
+ - name : "Scientific revolution"
+   link : "Scientific_revolution"
    
 scholar:
   style: apa
