@@ -17,7 +17,7 @@ nav:
  - name: "Contact"
    link: "contact"
  - name : "Scientific revolution"
-   link : "Scientific_revolution"
+   link : "https://github.com/regicid/Scientific_revolution"
    
 scholar:
   style: apa
