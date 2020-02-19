@@ -2,7 +2,7 @@
 layout: default
 ---
 
-<img class="profile-picture" src="picture.jpg",width="200">
+<img class="profile-picture" src="picture.jpg" width="200">
 
 Hi! I am an MRes student at the [ENS](http://www.ens.fr), Paris. 
 
