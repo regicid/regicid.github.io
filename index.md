@@ -4,7 +4,7 @@ layout: default
 
 <img class="profile-picture" src="picture.jpg">
 
-Hi! I am a MRes student at the [ENS](http://www.ens.fr), Paris. 
+Hi! I am an MRes student at the [ENS](http://www.ens.fr), Paris. 
 
 ## Research Interest
 I'm interested in human behavioural ecology, more precisely in evolutionary approaches of deprivation and behavioural history.
