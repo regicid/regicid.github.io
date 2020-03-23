@@ -2,7 +2,7 @@
 layout: default
 ---
 
-<img class="profile-picture" src="picture.jpg" width="200">
+<img class="profile-picture" src="picture.jpg" width="400">
 
 Hi! I am an MRes student at the [ENS](http://www.ens.fr), Paris. 
 
@@ -12,5 +12,5 @@ I'm interested in human behavioural ecology, more precisely in evolutionary appr
 ## Publications
 
 1. B. de Courson, N. Baumard: Quantifying the scientific revolution ([text](https://osf.io/preprints/socarxiv/9ex8q), [data & code](https://github.com/regicid/Scientific_revolution))
-2. B. de Courson, D. Nettle : Why inequalities and deprivation produce high crime and low trust ([code](https://github.com/regicid/Deprivation-antisociality/blob/master/Code.ipynb))
+2. B. de Courson, D. Nettle : Why inequalities and deprivation produce high crime and low trust ([text] (https://psyarxiv.com/p2aed) & [code](https://github.com/regicid/Deprivation-antisociality/blob/master/Code.ipynb))
 
