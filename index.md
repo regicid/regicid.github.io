@@ -11,6 +11,7 @@ I'm interested in human behavioural ecology, more precisely in evolutionary appr
 
 ## Publications
 
-1. B. de Courson, N. Baumard: Quantifying the scientific revolution ([text](https://osf.io/preprints/socarxiv/9ex8q), [data & code](https://github.com/regicid/Scientific_revolution))
-2. B. de Courson, D. Nettle : Why inequalities and deprivation produce high crime and low trust ([text](https://psyarxiv.com/p2aed), [code](https://github.com/regicid/Deprivation-antisociality/blob/master/Code.ipynb))
+1. de Courson, B. & N. Baumard: Quantifying the scientific revolution ([text](https://osf.io/preprints/socarxiv/9ex8q)
+2. de Courson, B. & D. Nettle : Why inequalities and deprivation produce high crime and low trust ([text](https://psyarxiv.com/p2aed), [code](https://github.com/regicid/Deprivation-antisociality/blob/master/Code.ipynb))
+3. de Courson, B., L. Fitouchi, J.-P. Bouchaud & Michael Benzaquen: [Why does individual learning endure when crowds are wiser?](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3756565)
 
