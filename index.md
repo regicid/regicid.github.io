@@ -4,7 +4,7 @@ layout: default
 
 <img class="profile-picture" src="picture.jpg" width="400">
 
-Hi! I am an MRes student at the [ENS](http://www.ens.fr), Paris. 
+Hi! I am a PhD student at the [ENS](http://www.ens.fr), Paris. I also teach the Linear Algebra module in CPES (PSL).
 
 ## Research Interest
 I'm interested in human behavioural ecology, more precisely in evolutionary approaches of deprivation and behavioural history.
