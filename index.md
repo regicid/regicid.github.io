@@ -7,7 +7,7 @@ layout: default
 Hi! I am a PhD student at the [CSL-MPG](csl.mpg.de), in Freiburg, Germany.
 
 ## Research Interest
-I'm lost somewhere between social sciences, psychology and economics. For the moment, my PhD is dedicated to a formal model to explain violence in deprived neighbourhoods. I'm also interested in history, where I made my bachelor. On my free time I develop the French website [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
+I'm lost somewhere between social sciences, psychology and economics. For the moment, my PhD is dedicated to building a formal model to explain violence in deprived neighbourhoods. I'm also interested in history, where I made my bachelor. On my free time I develop the French website [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
 ## Publications
 
 1. de Courson, B. & N. Baumard: [Quantifying the scientific revolution](https://osf.io/preprints/socarxiv/9ex8q)
