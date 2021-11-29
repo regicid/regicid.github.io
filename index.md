@@ -4,11 +4,10 @@ layout: default
 
 <img class="profile-picture" src="picture.jpg" width="400">
 
-Hi! I am a PhD student at the [ENS](http://www.ens.fr), Paris. I also teach the Linear Algebra module in CPES (PSL).
+Hi! I am a PhD student at the [CSL-MPG](csl.mpg.de), in Freiburg, Germany.
 
 ## Research Interest
-I'm interested in human behavioural ecology, more precisely in evolutionary approaches of deprivation and behavioural history.
-
+I'm lost somewhere between social sciences, psychology and economics. For the moment, my PhD is dedicated to a formal model to explain violence in deprived neighbourhoods. I'm also interested in history, where I made my bachelor. On my free time I develop the French website [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
 ## Publications
 
 1. de Courson, B. & N. Baumard: [Quantifying the scientific revolution](https://osf.io/preprints/socarxiv/9ex8q)
