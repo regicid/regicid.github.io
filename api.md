@@ -9,11 +9,12 @@ Pour les besoins du site, nous avons constitué des bases de données dénombran
 tableau = read.csv("https://shiny.ens-paris-saclay.fr/guni/query?mot=patate")
 ``
 
-Les bases sont structurées avec les colonnes suivantes : n (nombre d'occurrences, gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). Les bases ont été constituées légèrement différement selon le corpus :
+Si vous préférez le confort, vous pouvez utiliser les packages R, python et Ruby (voir ci-dessous).
+Les bases sont structurées avec les colonnes suivantes : n (nombre d'occurrences, gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). L'API ajoute une colonne "total", qui donne le nombre total de mots ou groupes de mots de cette taille dans le corpus, sur chaque période. On peut donc calculer la fréquence en divisant la colonne "n" par la colonne "total".  Les bases ont été constituées légèrement différement selon le corpus :
 * Le corpus "presse" a une résolution temporelle mensuelle, le corpus Le Monde une résolution journalière, le corpus "livres" une résolution annuelle.
 * A cause de l'explosion combinatoire et des tailles inégales des différentes corpus, nous avons calculé jusqu'au 3gram pour le corpus "presse", 4gram pour Le Monde et 5gram pour le corpus "livres". Autrement dit, on pourra chercher "une belle patate" dans le corpus presse, mais pas "une très belle patate". 
 * Dans les corpus Gallica (presse et livres), nous avons exclu toutes les lignes où n=1. Cela permettait de réduire massivement la taille de la base : l'océrisation étant imparfaite, l'immense majorité des lignes sont des erreurs d'OCR. Pas besoin dans Le Monde, où l'OCR a manifestement été relu et corrigé à la main.
-* A noter aussi que nous avons considéré l'apostrophe comme une lettre. 
+* Notons que nous avons considéré l'apostrophe comme une lettre. 
 
 ## Routes
 ### Query
@@ -21,6 +22,8 @@ Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query?mot=patate&corpus=presse
 Une simple route pour obtenir le nombre d'occurrence de `mot` entre l'année `from` et l'année `to`, dans le `corpus` voulu (qui doit appartenir à "presse", "livres" et "lemonde"). Seul l'argument `mot` est nécessaire; par défaut on cherche dans le corpus "presse", entre 1789 et nos jours. 
 
 ### Contain
+Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/contain?corpus=lemonde&mot1=patate&mot2=une&from=2015&to=2022](https://shiny.ens-paris-saclay.fr/guni/contain?corpus=lemonde&mot1=patate&mot2=une&from=2015&to=2022)
+Une sorte de mode co-occurrence proche : cette route vous compte le nombre de 3gram (4gram pour le corpus Le Monde) qui contiennent à la fois `mot1` et `mot2`. C'est en particulier utile pour étudier les stéréotypes ([exemple](https://regicid.github.io/masculinite_verbes.html)). 
 
-Une sorte de mode co-occurrence
-
+### Joker
+Syntaxe :
