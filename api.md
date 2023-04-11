@@ -1,4 +1,6 @@
 # API Gallicagram
+
+## Introduction
 Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement 3 corpus :
 * Les 3 millions de périodiques (numéros de presse) de Gallica, fiable entre 1789 et 1950
 * Les 300 000 monographies (livres) de Gallica, fiable entre 1600 et 1940
@@ -48,7 +50,7 @@ Pour l'installer : `pip install gallicagram` si vous êtes sur mac/linux. Si vou
 
 ### rallicagram
 Comme son nom l'indique, rallicagram se veut l'équivalent en R. Son développement est inachevé, seule la route "query" est pour l'instant implémentée. 
-
+[github.com/regicid/rallicagram](github.com/regicid/rallicagram)
 ### Gallicagram gem
 Nicolas Roux a eu la bonté de développer une gem Ruby. Pour connaître son stade de devéloppement, rendez-vous sur [https://github.com/nicolrx/gallicagram](https://github.com/nicolrx/gallicagram)
 
