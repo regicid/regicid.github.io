@@ -46,16 +46,34 @@ Dans l'application, nous couplons cette fonctionnalité avec une [liste de "mots
 
 ### 4 - Associated
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/associated?mot=changement%20climatique&corpus=lemonde&from=1945&to=2022&n_joker=200&length=4&stopwords=0](https://shiny.ens-paris-saclay.fr/guni/associated?mot=changement%20climatique&corpus=lemonde&from=1945&to=2022&n_joker=200&length=4&stopwords=0)
-Crée sur une idée de [Vincent Bagilet](https://vincentbagilet.github.io/), cette route généralise la route Joker. Elle vous renvoie les mots le plus souvent associés à `mot`, dans un voisinage de `length`. Vous pouvez entrer un nombre de stopwords à ignorer, entre 0 et 1000 (avec `stopwords=500`, on ignorera les 500 mots les plus fréquents, la liste ayant été établie sur le corpus de livres). Cette route est probablement la plus utile, elle vous permet d'explorer l'environnement sémantique de mot, de distinguer selons ses acceptions, etc. Par exemple, Vincent Bagilet l'a utilisée pour quantifier combien on utilisait, au cours du temps, le mot "climatique" en termes d'action, de causes, de conséquences ou de problème.
+Crée sur une idée de [Vincent Bagilet](https://vincentbagilet.github.io/), cette route généralise la route Joker. Elle vous renvoie les mots le plus souvent associés à `mot`, dans un voisinage de `length` (paramètre limité à 3 sur les corpus Gallica). Vous pouvez entrer un nombre de stopwords à ignorer, entre 0 et 1000 (avec `stopwords=500`, on ignorera les 500 mots les plus fréquents, la liste ayant été établie sur le corpus de livres). Cette route est probablement la plus utile, elle vous permet d'explorer l'environnement sémantique de mot, de distinguer selon ses acceptions, etc. Par exemple, Vincent Bagilet l'a utilisée pour quantifier combien on utilisait, au cours du temps, le mot "climatique" en termes d'action, de causes, de conséquences ou de problème.
+
+Cette route peut être un peu lente, surtout si `length` est élevé. Pour des mots extrêmement fréquents (comme "pas") vous risquez d'atteindre le timeout (actuellement fixé à 5000 secondes). Dans ce cas, n'hésitez pas à relancer. SQL garde en cache les calculs déjà faits, alors avec quelques essais, ça finira par marcher. 
+
+
+### 5 - Associated_article (corpus Le Monde uniquement)
+Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/associated_article?mot=climatique&from=1945&to=2022&n_joker=200&stopwords=0](https://shiny.ens-paris-saclay.fr/guni/associated_article?mot=climatique&from=1945&to=2022&n_joker=200&stopwords=0)
+
+Egalement due à Vincent, cette route explore aussi l'environnement sémantique d'un mot, mais au niveau de l'article entier (et non du groupe de mot). Deux limites : elle ne fonctionne que sur Le Monde (seul corpus segmenté en articles) et seulement sur un mot : vous pourrez chercher "climatique", mais pas "changement climatique". Cette route est lente sur les mots très fréquents.
+
+### 6 - Coccurrences au niveau de l'article (corpus Le Monde uniquement)
+Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/cooccur?mot1=climatique&mot2=crise&from=1945&to=2022&resolution=mois](https://shiny.ens-paris-saclay.fr/guni/cooccur?mot1=climatique&mot2=crise+crises&from=1945&to=2022&resolution=mois)
+
+Cette route vous donne le nombre d'articles où figurent deux mots, par exemple où figurent à la fois le mot "crise" et "climatique". Vous pouvez aussi fournir à cette route une collection de mot, auquel cas on sépare les mots par des +, comme dans l'exemple ci-dessus (`crise+crises`. La route vous renvoie aussi le nombre total d'articles à chaque période (`nb_total_article`), afin de pouvoir calculer les fréquences de cooccurrences au cours du temps. 
+
+### 7 - Query_article (corpus Le Monde uniquement)
+Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query_article?mot=d%C3%A9linquance&from=1960&to=2000](https://shiny.ens-paris-saclay.fr/guni/query_article?mot=d%C3%A9linquance&from=1960&to=2000)
+
+Tout simplement un comptage du nombre d'articles où figure le mot, là où la route query compte le nombre d'occurrences. On vous renvoie aussi bien sûr le nombre total d'articles sur chaque période (`nb_total_article`) pour calculer les fréquences. Cette route peut (entre autre) servir de test de robustesse, ou de comparaison à d'autres corpus où la mesure est "par article" et non "par occurrence". Je ne l'utilise personnellement pas, mais plusieurs personnes nous l'ont demandée, alors la voici.
 
 
 ## Librairies
 ### pyllicagram
-Le package le plus abouti, car python c'est quand même vachement mieux que R (oui, Gallicagram est codé en R, j'en souffre suffisamment, pas besoin de me le rappeler... Fichue dépendance au sentier. Parenthèse fermée)
+Le seul package que nous avons écrit, car python c'est quand même vachement mieux que R (oui, Gallicagram est codé en R, j'en souffre suffisamment, pas besoin de me le rappeler... Fichue dépendance au sentier. Parenthèse fermée)
 
-Le package contient trois fonctions correspondant aux trois routes, il est disponible ici : [https://github.com/regicid/pyllicagram](https://github.com/regicid/pyllicagram).
+Le package contient trois fonctions correspondant aux trois premières routes, il est disponible ici : [https://github.com/regicid/pyllicagram](https://github.com/regicid/pyllicagram).
 
-Pour l'installer : `pip install gallicagram` si vous êtes sur mac/linux. Si vous êtes sur Windows, j'en ai pas la moindre idée et c'est pas ma faute s'il y a encore des gens sur Windows.
+Pour l'installer : `pip install pyllicagram` si vous êtes sur mac/linux (ou `pip3 install pyllicagram`) . Si vous êtes sur Windows, j'en ai pas la moindre idée et c'est pas ma faute s'il y a encore des gens sur Windows.
 
 ### rallicagram
 [Vincent Bagilet](https://vincentbagilet.github.io/) a développé ce magnifique package en R
