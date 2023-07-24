@@ -19,8 +19,8 @@ Nos bases sont en SQLite, et structurées avec les colonnes suivantes : n (nombr
 * Dans les corpus Gallica (presse et livres), nous avons exclu toutes les lignes où n=1. Cela permettait de réduire massivement la taille de la base : l'océrisation étant imparfaite, l'immense majorité des lignes sont des erreurs d'OCR. Pas besoin dans Le Monde, où l'OCR a manifestement été relu et corrigé à la main.
 * Notons que nous avons considéré l'apostrophe comme une lettre. 
 
-## Nos 3 routes
-Les bases de donnée peuvent être interrogées de 3 façons. Si en voyant la structure des données décrites ci-dessus, un autre mode vous vient à l'esprit, n'hésitez pas.
+## Nos 7 routes
+Les bases de donnée peuvent être interrogées de 7 façons. Si en voyant la structure des données décrites ci-dessus, un autre mode vous vient à l'esprit, n'hésitez pas.
 
 ### 1 - Query
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query?mot=patate&corpus=presse&from=1789&to=1950](https://shiny.ens-paris-saclay.fr/guni/query?mot=patate&corpus=presse&from=1789&to=1950)
@@ -30,7 +30,7 @@ Une simple route pour obtenir le nombre d'occurrence de `mot` entre l'année `fr
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/contain?corpus=lemonde&mot1=patate&mot2=une&from=2015&to=2022](https://shiny.ens-paris-saclay.fr/guni/contain?corpus=lemonde&mot1=patate&mot2=une&from=2015&to=2022&count=True)
 Une sorte de mode co-occurrence proche : cette route vous compte le nombre de 3gram (4gram pour le corpus Le Monde) qui contiennent à la fois `mot1` et `mot2`. C'est en particulier utile pour étudier les stéréotypes ([exemple](https://regicid.github.io/masculinite_verbes.html)). 
 
-Si ce qui vous intérese ce n'est pas les comptage mais de jeter un oeil aux bouts de textes qui contiennent ces deux mots (pour comprendre pourquoi deux mots sont associés dans la route `associated` décrite ci-dessous par exemple), vous pouvez glisser `count=False`. On vous retournera les 3 ou 4-gram (selon le corpus) datés.
+Si ce qui vous intérese ce n'est pas les comptage mais de jeter un oeil aux bouts de textes qui contiennent ces deux mots (pour comprendre pourquoi deux mots sont associés dans la route `associated` décrite ci-dessous par exemple), vous pouvez glisser `count=False`. On vous retournera les 3 ou 4-gram (selon le corpus) comptés et datés.
 
 ### 3 - Joker
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/joker?mot=camarade&corpus=lemonde&from=1945&to=2022&n_joker=200](https://shiny.ens-paris-saclay.fr/guni/joker?mot=camarade&corpus=lemonde&from=1945&to=2022&n_joker=200&after=True&length=2)
