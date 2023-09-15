@@ -1,10 +1,28 @@
 # API Gallicagram
 
 ## Introduction
-Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement 3 corpus :
+Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement plusieurs corpus :
 * Les 3 millions de périodiques (numéros de presse) de Gallica, fiable entre 1789 et 1950
 * Les 300 000 monographies (livres) de Gallica, fiable entre 1600 et 1940
 * Les 3 millions d'articles des archives du quotidien Le Monde (décembre 1944-décembre 2022)
+* Le gros million de documents du Zeitungsportal, qui regroupe les archives de presse de la Deutsche Digitale Bibliothek, équivalent (en moins bien) de Gallica outre-Rhin. 
+* Un certain nombre de journaux de Gallica, voire ci-dessous.
+
+|   Titre                           |   Période                     |   Volume (en mots)  |   Code API            |
+|-----------------------------------|-------------------------------|---------------------|-----------------------|
+|   Presse de Gallica               |   1789-1950                   |   57 milliards      |   presse              |
+|   Deutsches Zeitungsportal (DDB)  |   1780-1950                   |   39 milliards      |   ddb                 | 
+|   Journal de Paris                |   1777-1827                   |   86 millions       |   paris               |   
+|   Moniteur Universel              |   1789-1869                   |   511 millions      |   moniteur            |   
+|   Journal des Débats              |   1789-1944                   |   1,2 milliard    |   journal_des_debats  |   
+|   La Presse                       |   1836-1869                   |   253 millions      |   la_presse           |   
+|   Le Constitutionnel              |   1821-1913 (très lacunaire)  |   64 millions       |   constitutionnel     |   
+|   Le Figaro                       |   1854-1952                   |   870 millions      |   figaro              |   
+|   Le Temps                        |   1861-1942                   |   1 milliard        |   temps               |   
+|   Le Petit Journal                |   1863-1942                   |   745 millions      |   petit_journal       |   
+|   Le Petit Parisien               |   1876-1944                   |   631 millions      |   petit_parisien      |   
+|   L’Humanité                      |   1904-1952                   |   318 millions      |   huma                |   
+|   Le Monde                        |   1944-2023                   |   1,5 milliards     |   lemonde             |   
 
 Pour l'application, nous avons constitué des bases de données dénombrant le nombre d'occurrences des mots et groupes de mots sur chaque corpus, sur chaque période. Ce sont ces mêmes bases que l'application utilise pour afficher ses graphes (s'il fallait compter à chaque fois les occurrences dans le corpus, cela prendait des semaines). Bref, nous avons fait des calculs interminables pour compter le nombre d'occurrences de chaque mot, et cette information pourrait être utile à d'autres. 
 Ces bases de données étant trop vastes pour être téléchargeables (2 téras au total), nous les rendons interrogeables à travers cette API, qui vous envoie les données au format csv. Vous pouvez par exemple l'utiliser en insérant dans votre code R la ligne suivante:
