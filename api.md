@@ -12,6 +12,7 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 |-----------------------------------|-------------------------------|---------------------|-----------------------|
 |   Presse de Gallica               |   1789-1950                   |   57 milliards      |   presse              |
 |   Deutsches Zeitungsportal (DDB)  |   1780-1950                   |   39 milliards      |   ddb                 | 
+|   American Stories                |   1798-1963                   |   20 milliards     |   american_stories  
 |   Journal de Paris                |   1777-1827                   |   86 millions       |   paris               |   
 |   Moniteur Universel              |   1789-1869                   |   511 millions      |   moniteur            |   
 |   Journal des Débats              |   1789-1944                   |   1,2 milliard    |   journal_des_debats  |   
