@@ -8,22 +8,27 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 * Le gros million de documents du Zeitungsportal, qui regroupe les archives de presse de la Deutsche Digitale Bibliothek, équivalent (en moins bien) de Gallica outre-Rhin. 
 * Un certain nombre de journaux de Gallica, voire ci-dessous.
 
-|   Titre                           |   Période                     |   Volume (en mots)  |   Code API            |
-|-----------------------------------|-------------------------------|---------------------|-----------------------|
-|   Presse de Gallica               |   1789-1950                   |   57 milliards      |   presse              |
-|   Deutsches Zeitungsportal (DDB)  |   1780-1950                   |   39 milliards      |   ddb                 | 
-|   American Stories                |   1798-1963                   |   20 milliards     |   american_stories  
-|   Journal de Paris                |   1777-1827                   |   86 millions       |   paris               |   
-|   Moniteur Universel              |   1789-1869                   |   511 millions      |   moniteur            |   
-|   Journal des Débats              |   1789-1944                   |   1,2 milliard    |   journal_des_debats  |   
-|   La Presse                       |   1836-1869                   |   253 millions      |   la_presse           |   
-|   Le Constitutionnel              |   1821-1913 (très lacunaire)  |   64 millions       |   constitutionnel     |   
-|   Le Figaro                       |   1854-1952                   |   870 millions      |   figaro              |   
-|   Le Temps                        |   1861-1942                   |   1 milliard        |   temps               |   
-|   Le Petit Journal                |   1863-1942                   |   745 millions      |   petit_journal       |   
-|   Le Petit Parisien               |   1876-1944                   |   631 millions      |   petit_parisien      |   
-|   L’Humanité                      |   1904-1952                   |   318 millions      |   huma                |   
-|   Le Monde                        |   1944-2023                   |   1,5 milliards     |   lemonde             |   
+|Titre                         |Période (conseillée)      |Volume (en mots)|Code API          |Longueur max|Résolution                    |Seuils                 |
+|------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------|
+|Le Monde                      |1944-2023                 |1,5 milliards   |lemonde           |4gram       |Journalière                   |Aucun                  |
+|Presse de Gallica             |1789-1950                 |57 milliards    |presse            |3gram       |Mensuelle                     |2gram>1,3gram>1        |
+|Livres de Gallica             |1600-1940                 |16 milliards    |livres            |5gram       |Annuelle                      |2gram>1, etc           |
+|Deutsches Zeitungsportal (DDB)|1780-1950                 |39 milliards    |ddb               |2gram       |Mensuelle                     |1gram > 1, 2gram>2     |
+|American Stories              |1798-1963                 |20 milliards    |american_stories  |3gram       |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3|
+|Journal de Paris              |1777-1827                 |86 millions     |paris             |2gram       |Journalière                   |2gram>1                |
+|Moniteur Universel            |1789-1869                 |511 millions    |moniteur          |2gram       |Journalière                   |2gram>1                |
+|Journal des Débats            |1789-1944                 |1,2 milliards   |journal_des_debats|1gram       |Journalière                   |Aucun                  |
+|La Presse                     |1836-1869                 |253 millions    |la_presse         |2gram       |Journalière                   |2gram>1                |
+|Le Constitutionnel            |1821-1913 (très lacunaire)|64 millions     |constitutionnel   |2gram       |Journalière                   |2gram>1                |
+|Le Figaro                     |1854-1952                 |870 millions    |figaro            |2gram       |Journalière                   |2gram>1                |
+|Le Temps                      |1861-1942                 |1 milliard      |temps             |2gram       |Journalière                   |2gram>1                |
+|Le Petit Journal              |1863-1942                 |745 millions    |petit_journal     |2gram       |Journalière                   |2gram>1                |
+|Le Petit Parisien             |1876-1944                 |631 millions    |petit_parisien    |2gram       |Journalière                   |2gram>1                |
+|L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                |
+|Opensubtitles (français)      |1935-2020                 |17 millions     |substitles        |3gram       |Annuelle                      |Aucun                  |
+|Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  |
+
+
 
 Pour l'application, nous avons constitué des bases de données dénombrant le nombre d'occurrences des mots et groupes de mots sur chaque corpus, sur chaque période. Ce sont ces mêmes bases que l'application utilise pour afficher ses graphes (s'il fallait compter à chaque fois les occurrences dans le corpus, cela prendait des semaines). Bref, nous avons fait des calculs interminables pour compter le nombre d'occurrences de chaque mot, et cette information pourrait être utile à d'autres. 
 Ces bases de données étant trop vastes pour être téléchargeables (2 téras au total), nous les rendons interrogeables à travers cette API, qui vous envoie les données au format csv. Vous pouvez par exemple l'utiliser en insérant dans votre code R la ligne suivante:
