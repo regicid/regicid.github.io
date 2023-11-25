@@ -25,7 +25,7 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 |Le Petit Journal              |1863-1942                 |745 millions    |petit_journal     |2gram       |Journalière                   |2gram>1                |
 |Le Petit Parisien             |1876-1944                 |631 millions    |petit_parisien    |2gram       |Journalière                   |2gram>1                |
 |L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                |
-|Opensubtitles (français)      |1935-2020                 |17 millions     |substitles        |3gram       |Annuelle                      |Aucun                  |
+|Opensubtitles (français)      |1935-2020                 |17 millions     |subtitles        |3gram       |Annuelle                      |Aucun                  |
 |Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  |
 
 
