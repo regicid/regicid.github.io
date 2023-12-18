@@ -1,5 +1,10 @@
-# Corpus "Persée prolongé" sur Gallicagram
-
+---
+title: "Corpus 'Persée prolongé' sur Gallicagram"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+```
 Une petite note pour décrire ce que contient notre corpus Persée prolongé, et la façon dont nous avons procédé. Grâce à l'aimable autorisation des équipes de Persée, nous avons scrapé la totalité des articles de Persée, 1,1 millions de documents issus d'environ 300 revues. Pour créer notre base de données, nous avons amalgamé les textes par revue et par année. Il est donc possible de chercher le nombre d'occurrences de "belle patate" dans la revue des Annales en 1929. 
 
 Mais, il faut savoir qu'un tas de revues basculent de Persée vers Cairn au début des années 2000. En particuler les Annales, XXe siècle, la Revue française de Sociologie, les Actes de la Recherche en Sciences sociales, Population, les Annales de démographie historique. Ces documents sont cependant référencés dans Persée. Nous avons donc recensé ces liens vers Cairn depuis Persée, et récupéré le texte des articles concernés (27 000 articles) pour prolonger notre base et la rendre utile jusqu'à nos jours. A noter que certaines basculent dans Cairn sans que les documents ultérieurs soient référencés dans Persée, et sont donc (pour l'instant) exclues de notre base. C'est, par exemple, le cas des Cahiers du genre. D'autres revues basculent non pas vers Cairn, mais vers Open Editions (Histoire & Mesure, par exemple). Le prolongement serait faisable dans ces deux cas, mais nous ne l'avons pas encore entrepris. A noter que l'application renvoie toujours vers Persée lorsqu'on clique sur un point du graphique. Pour cause : le moteur de recherche avancée de Cairn ne permet pas de cibler une revue, les documents n'y sont pas toujours en accès ouvert, et notre base permet de faire des recherches dans un corpus à cheval sur les deux revues. Il nous a paru plus sage de ne pas nous engager dans des renvois vers Cairn (en plus, ça aurait été un enfer à coder).
@@ -11,7 +16,9 @@ De ce fait, nous vous conseillons de filtrer les revues, et de ne garder que les
 
 Ci-dessous, une liste des revues, les disciplines associées et leurs bornes chronologiques.
 
-```{r echo=False}
-
-
+```{r echo=FALSE}
+tableau = read.csv("revues_persee_full.csv")
+tableau = tableau[-1]
+colnames(tableau)[1] = "Nom de la Revue"
+knitr::kable(tableau)
 ```
