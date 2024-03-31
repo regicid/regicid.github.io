@@ -2,11 +2,11 @@
 
 ## Introduction
 Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement plusieurs corpus :
-* Les 3 millions de périodiques (numéros de presse) de Gallica, fiable entre 1789 et 1950
-* Les 300 000 monographies (livres) de Gallica, fiable entre 1600 et 1940
+* Les 3 millions de périodiques (numéros de presse) de *Gallica*, fiable entre 1789 et 1950
+* Les 300 000 monographies (livres) de *Gallica*, fiable entre 1600 et 1940
 * Les 3 millions d'articles des archives du quotidien Le Monde (décembre 1944-décembre 2022)
 * Le gros million de documents du Zeitungsportal, qui regroupe les archives de presse de la Deutsche Digitale Bibliothek, équivalent (en moins bien) de Gallica outre-Rhin. 
-* Un certain nombre de journaux de Gallica, voire ci-dessous.
+* Un certain nombre de corpus, issus ou non de *Gallica*, voire ci-dessous.
 
 |Titre                         |Période (conseillée)      |Volume (en mots)|Code API          |Longueur max|Résolution                    |Seuils                 |
 |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------|
@@ -27,7 +27,8 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 |L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                |
 |Opensubtitles (français)      |1935-2020                 |17 millions     |subtitles        |3gram       |Annuelle                      |Aucun                  |
 |Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  |
-|Rap (Genius)       |1989-2024 (début)                 |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  |
+|Rap (Genius)       |1989-février 2024               |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  |
+|Persée       |1789-2023               |1 milliard    |route à part (query_persee)     |2gram       |Annuelle                      |Aucun                  |
 
 
 
@@ -44,8 +45,8 @@ Nos bases sont en SQLite, et structurées avec les colonnes suivantes : n (nombr
 * Dans les corpus Gallica (presse et livres), nous avons exclu toutes les lignes où n=1. Cela permettait de réduire massivement la taille de la base : l'océrisation étant imparfaite, l'immense majorité des lignes sont des erreurs d'OCR. Pas besoin dans Le Monde, où l'OCR a manifestement été relu et corrigé à la main.
 * Notons que nous avons considéré l'apostrophe comme une lettre. 
 
-## Nos 7 routes
-Les bases de donnée peuvent être interrogées de 7 façons. Si en voyant la structure des données décrites ci-dessus, un autre mode vous vient à l'esprit, n'hésitez pas.
+## Nos routes
+Les bases de données peuvent être interrogées de plusieurs façons. Si en voyant la structure des données décrites ci-dessus, un autre mode vous vient à l'esprit, n'hésitez pas à nous écrire (cette API est essentiellement constituée d'idées d'autres personnes, et son existence même est due à une demande d'Etienne Brunet, que je salue).
 
 ### 1 - Query
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query?mot=patate&corpus=presse&from=1789&to=1950](https://shiny.ens-paris-saclay.fr/guni/query?mot=patate&corpus=presse&from=1789&to=1950)
@@ -86,10 +87,19 @@ Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/cooccur?mot1=climatique&mot2=c
 
 Cette route vous donne le nombre d'articles où figurent deux mots, par exemple où figurent à la fois le mot "crise" et "climatique". Vous pouvez aussi fournir à cette route une collection de mot, auquel cas on sépare les mots par des +, comme dans l'exemple ci-dessus (`crise+crises`. La route vous renvoie aussi le nombre total d'articles à chaque période (`nb_total_article`), afin de pouvoir calculer les fréquences de cooccurrences au cours du temps. 
 
-### 7 - Query_article (corpus Le Monde uniquement)
+### 7 - query_article (corpus Le Monde uniquement)
 Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query_article?mot=d%C3%A9linquance&from=1960&to=2000](https://shiny.ens-paris-saclay.fr/guni/query_article?mot=d%C3%A9linquance&from=1960&to=2000)
 
 Tout simplement un comptage du nombre d'articles où figure le mot, là où la route query compte le nombre d'occurrences. On vous renvoie aussi bien sûr le nombre total d'articles sur chaque période (`nb_total_article`) pour calculer les fréquences. Cette route peut (entre autre) servir de test de robustesse, ou de comparaison à d'autres corpus où la mesure est "par article" et non "par occurrence". Je ne l'utilise personnellement pas, mais plusieurs personnes nous l'ont demandée, alors la voici.
+
+### 8 - query_persee (corpus Persée)
+Syntaxe : [https://shiny.ens-paris-saclay.fr/guni/query_persee?mot=in%C3%A9galit%C3%A9s&from=1789&to=2000&by_revue=False&revue=arss+ahess+rfs+dreso+ds](https://shiny.ens-paris-saclay.fr/guni/query_persee?mot=in%C3%A9galit%C3%A9s&from=1789&to=2000&by_revue=False&revue=arss+ahess+rfs+dreso+ds)
+
+Une route à part pour compter les occurrences dans le corpus Persée. Sa particularité est d'avoir été indexé non seulement par année, mais aussi par revue. Vous pouvez donc chercher dans une seule revue, ou dans un bouquet de revue que vous vous constituez. Par exemple, pour étudier la diffusion d'un concept sociologique, il serait plus pertinent de chercher dans une dizaine de revues canoniques en sociologie, plutôt que dans le corpus tout entier, qui contient également des géosciences. Les revues disponibles sont renseignées [ici](https://github.com/regicid/regicid.github.io/blob/master/revues_persee_full.csv). La colonne "Codes" du tableau vous donne l'identifieur des revues, que vous fournisser au paramètre `nb_total_article` dans l'API. Vous pouvez chercher dans plusieurs revues en séparant les revues par des + (dans l'exemple ci-dessus, on cherche dans les *Actes de la Recherche en Sciences sociales*, les *Annales*, la *RFS*, *Droit et Société* et *Déviance et société*. Avec `by_revue=False` (la valeur par défaut), les occurrences sont agrégées par année. Avec `by_revue=True`, on conserve leur ventilation dans les différentes revues. Avec `by_revue=True` et un champ `revue` non renseigné, vous pouvez chercher d'où proviennent les occurrences dans la totalité du corpus.
+
+Une limite : on ne peut pour l'instant pas chercher de syntagme de plus de deux mots. 
+
+Pour plus d'informations sur le corpus Persée, les revues qu'il contient et les périodes de disponibilité, ça se passe [ici](https://regicid.github.io/persee).
 
 
 ## Librairies
@@ -99,6 +109,8 @@ Le seul package que nous avons écrit, car python c'est quand même vachement mi
 Le package contient trois fonctions correspondant aux trois premières routes, il est disponible ici : [https://github.com/regicid/pyllicagram](https://github.com/regicid/pyllicagram).
 
 Pour l'installer : `pip install pyllicagram` si vous êtes sur mac/linux (ou `pip3 install pyllicagram`) . Si vous êtes sur Windows, j'en ai pas la moindre idée et c'est pas ma faute s'il y a encore des gens sur Windows.
+
+Note : le package n'est vraiment pas à jour et il faudrait que je travaille dessus.
 
 ### rallicagram
 [Vincent Bagilet](https://vincentbagilet.github.io/) a développé ce magnifique package en R
