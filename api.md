@@ -27,6 +27,7 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 |L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                |
 |Opensubtitles (français)      |1935-2020                 |17 millions     |subtitles        |3gram       |Annuelle                      |Aucun                  |
 |Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  |
+|Rap (Genius)       |1989-2024 (début)                 |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  |
 
 
 
