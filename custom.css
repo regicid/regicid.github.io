@@ -29,13 +29,9 @@ pre {
     overflow-x: auto;
 }
 
-/* Add this new style for the table */
-.table-container {
-    overflow-x: auto;
-}
 
 table {
-    background: #444444; /* Dark background color for the table */
+    background-colod: #555555; /* Dark background color for the table */
     color: black; /* Light text color for table cells */
     width: 100%;
     border-collapse: collapse;
