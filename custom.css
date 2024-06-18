@@ -1,11 +1,11 @@
 body {
-    background-color: #2e2e2e; /* Dark background color */
-    color: #ffffff; /* Light text color */
+    background-color: #ffffff; /* White background color */
+    color: #000000; /* Black text color */
     font-family: 'Garamond', serif; /* Garamond font */
 }
 
 h1, h2, h3, h4, h5, h6 {
-    color: #ffffff; /* Light text color for headings */
+    color: #000000; /* Black text color for headings */
 }
 
 a {
@@ -17,22 +17,21 @@ a:visited {
 }
 
 code {
-    background-color: #444444; /* Darker background for code */
-    color: #f8f8f2; /* Light text color for code */
+    background-color: #f0f0f0; /* Lighter background for code */
+    color: #333333; /* Dark text color for code */
 }
 
 pre {
-    background-color: #444444; /* Darker background for preformatted text */
-    color: #f8f8f2; /* Light text color for preformatted text */
+    background-color: #f0f0f0; /* Lighter background for preformatted text */
+    color: #333333; /* Dark text color for preformatted text */
     padding: 10px;
     border-radius: 5px;
     overflow-x: auto;
 }
 
-
 table {
-    background-colod: #555555; /* Dark background color for the table */
-    color: black; /* Light text color for table cells */
+    background-color: #ffffff; /* White background color for the table */
+    color: #000000; /* Black text color for table cells */
     width: 100%;
     border-collapse: collapse;
 }
@@ -41,10 +40,10 @@ th, td {
     border: 1px solid #dddddd;
     padding: 8px;
     text-align: left;
-    color: #ffffff; /* Light text color for table cells */
+    color: #000000; /* Black text color for table cells */
 }
 
 th {
-    background-color: #555555; /* Darker background for table headers */
+    background-color: #f0f0f0; /* Lighter background for table headers */
 }
 
