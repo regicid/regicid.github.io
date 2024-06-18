@@ -10,7 +10,26 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 
 En voici la liste complète, ainsi que quelques détails sur les corpus - en particulier la date où nous les avons téléchargés :
 
-|Titre |Période (conseillée) |Volume (en mots)|Code API |Longueur max|Résolution |Seuils | Date de téléchargement | |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------| |Le Monde |1944-2023 |1,5 milliards |lemonde |4gram |Journalière |Aucun | Janvier 2023 | |Presse de Gallica |1789-1950 |57 milliards |presse |3gram |Mensuelle |2gram>1,3gram>1 | Avril 2021 | |Livres de Gallica |1600-1940 |16 milliards |livres |5gram |Annuelle |2gram>1, etc | Avril 2021 | |Deutsches Zeitungsportal (DDB)|1780-1950 |39 milliards |ddb |2gram |Mensuelle |1gram > 1, 2gram>2 | Août 2023 | |American Stories |1798-1963 |20 milliards |american_stories |3gram |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3| Octobre 2023 | |Journal de Paris |1777-1827 |86 millions |paris |2gram |Journalière |2gram>1 | Août 2023 | |Moniteur Universel |1789-1869 |511 millions |moniteur |2gram |Journalière |2gram>1 | Août 2023 | |Journal des Débats |1789-1944 |1,2 milliards |journal_des_debats|1gram |Journalière |Aucun | Août 2023 | |La Presse |1836-1869 |253 millions |la_presse |2gram |Journalière |2gram>1 | Août 2023 | |Le Constitutionnel |1821-1913 (très lacunaire)|64 millions |constitutionnel |2gram |Journalière |2gram>1 | |Le Figaro |1854-1952 |870 millions |figaro |2gram |Journalière |2gram>1 | Août 2023 | |Le Temps |1861-1942 |1 milliard |temps |2gram |Journalière |2gram>1 | Août 2023 | |Le Petit Journal |1863-1942 |745 millions |petit_journal |2gram |Journalière |2gram>1 | Août 2023 | |Le Petit Parisien |1876-1944 |631 millions |petit_parisien |2gram |Journalière |2gram>1 | Août 2023 | |L’Humanité |1904-1952 |318 millions |huma |2gram |Journalière |2gram>1 | Août 2023 | |Opensubtitles (français) |1935-2020 |17 millions |subtitles |3gram |Annuelle |Aucun | Juillet 2023 | |Opensubtitles (anglais) |1930-2020 |102 millions |subtitles_en |3gram |Annuelle |Aucun | Juillet 2023 | |Rap (Genius) |1989-février 2024 |20 millions |rap |5gram |Annuelle |Aucun | Mars 2024 | |Persée |1789-2023 |1 milliard |route à part (query_persee) |2gram |Annuelle |Aucun | Décembre 2023 |
+|Titre |Période (conseillée) |Volume (en mots)|Code API |Longueur max|Résolution |Seuils | Date de téléchargement | |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------| 
+|Le Monde |1944-2023 |1,5 milliards |lemonde |4gram |Journalière |Aucun | Janvier 2023 | 
+|Presse de Gallica |1789-1950 |57 milliards |presse |3gram |Mensuelle |2gram>1,3gram>1 | Avril 2021 | 
+|Livres de Gallica |1600-1940 |16 milliards |livres |5gram |Annuelle |2gram>1, etc | Avril 2021 | 
+|Deutsches Zeitungsportal (DDB)|1780-1950 |39 milliards |ddb |2gram |Mensuelle |1gram > 1, 2gram>2 | Août 2023 | 
+|American Stories |1798-1963 |20 milliards |american_stories |3gram |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3| Octobre 2023 | 
+|Journal de Paris |1777-1827 |86 millions |paris |2gram |Journalière |2gram>1 | Août 2023 | 
+|Moniteur Universel |1789-1869 |511 millions |moniteur |2gram |Journalière |2gram>1 | Août 2023 | 
+|Journal des Débats |1789-1944 |1,2 milliards |journal_des_debats|1gram |Journalière |Aucun | Août 2023 | 
+|La Presse |1836-1869 |253 millions |la_presse |2gram |Journalière |2gram>1 | Août 2023 | 
+|Le Constitutionnel |1821-1913 (très lacunaire)|64 millions |constitutionnel |2gram |Journalière |2gram>1 | 
+|Le Figaro |1854-1952 |870 millions |figaro |2gram |Journalière |2gram>1 | Août 2023 | 
+|Le Temps |1861-1942 |1 milliard |temps |2gram |Journalière |2gram>1 | Août 2023 | 
+|Le Petit Journal |1863-1942 |745 millions |petit_journal |2gram |Journalière |2gram>1 | Août 2023 | 
+|Le Petit Parisien |1876-1944 |631 millions |petit_parisien |2gram |Journalière |2gram>1 | Août 2023 | 
+|L’Humanité |1904-1952 |318 millions |huma |2gram |Journalière |2gram>1 | Août 2023 | 
+|Opensubtitles (français) |1935-2020 |17 millions |subtitles |3gram |Annuelle |Aucun | Juillet 2023 | 
+|Opensubtitles (anglais) |1930-2020 |102 millions |subtitles_en |3gram |Annuelle |Aucun | Juillet 2023 | 
+|Rap (Genius) |1989-février 2024 |20 millions |rap |5gram |Annuelle |Aucun | Mars 2024 | 
+|Persée |1789-2023 |1 milliard |route à part (query_persee) |2gram |Annuelle |Aucun | Décembre 2023 |
 
 Pour l'application, nous avons constitué des bases de données dénombrant le nombre d'occurrences des mots et groupes de mots sur chaque corpus, sur chaque période. Ce sont ces mêmes bases que l'application utilise pour afficher ses graphes (s'il fallait compter à chaque fois les occurrences dans le corpus, cela prendait des semaines). Bref, nous avons fait des calculs interminables pour compter le nombre d'occurrences de chaque mot, et cette information pourrait être utile à d'autres. 
 Ces bases de données étant trop vastes pour être téléchargeables (2 téras au total) et manipulables. À titre d'exemple, nous avons déposé la base des 1grams des archives du *Monde* sur Huggingface au format parquet, à [cette adresse](https://huggingface.co/datasets/regicid/1gram_lemonde), et rendons les autres interrogeables à travers cette API, qui vous envoie les données au format csv. 
