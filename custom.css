@@ -35,7 +35,7 @@ pre {
 }
 
 table {
-    color: #333333; /* Dark background color for the table */
+    background: #333333; /* Dark background color for the table */
     color: #ffffff; /* Light text color for table cells */
     width: 100%;
     border-collapse: collapse;
