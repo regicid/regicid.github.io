@@ -29,3 +29,24 @@ pre {
     overflow-x: auto;
 }
 
+/* Add this new style for the table */
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    padding: 8px;
+    text-align: left;
+    color: #ffffff; /* Light text color for table cells */
+}
+
+th {
+    background-color: #555555; /* Darker background for table headers */
+}
+
