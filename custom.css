@@ -1,0 +1,31 @@
+body {
+    background-color: #2e2e2e; /* Dark background color */
+    color: #ffffff; /* Light text color */
+    font-family: 'Garamond', serif; /* Garamond font */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff; /* Light text color for headings */
+}
+
+a {
+    color: #1e90ff; /* Link color */
+}
+
+a:visited {
+    color: #551a8b; /* Visited link color */
+}
+
+code {
+    background-color: #444444; /* Darker background for code */
+    color: #f8f8f2; /* Light text color for code */
+}
+
+pre {
+    background-color: #444444; /* Darker background for preformatted text */
+    color: #f8f8f2; /* Light text color for preformatted text */
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+

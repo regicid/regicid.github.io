@@ -1,3 +1,4 @@
+<link rel="stylesheet" type="text/css" href="custom.css">
 # API Gallicagram
 
 ## Introduction
@@ -9,7 +10,7 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 
 En voici la liste complète, ainsi que quelques détails sur les corpus - en particulier la date où nous les avons téléchargés :
 
-<div class="overflow-table">
+
 |Titre                         |Période (conseillée)      |Volume (en mots)|Code API          |Longueur max|Résolution                    |Seuils                 | Date de téléchargement |
 |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------|
 |Le Monde                      |1944-2023                 |1,5 milliards   |lemonde           |4gram       |Journalière                   |Aucun                  | Janvier 2023  |
@@ -31,7 +32,7 @@ En voici la liste complète, ainsi que quelques détails sur les corpus - en par
 |Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  | Juillet 2023 |
 |Rap (Genius)       |1989-février 2024               |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  | Mars 2024 |
 |Persée       |1789-2023               |1 milliard    |route à part (query_persee)     |2gram       |Annuelle                      |Aucun                  | Décembre 2023 |
-</div>
+
 
 
 Pour l'application, nous avons constitué des bases de données dénombrant le nombre d'occurrences des mots et groupes de mots sur chaque corpus, sur chaque période. Ce sont ces mêmes bases que l'application utilise pour afficher ses graphes (s'il fallait compter à chaque fois les occurrences dans le corpus, cela prendait des semaines). Bref, nous avons fait des calculs interminables pour compter le nombre d'occurrences de chaque mot, et cette information pourrait être utile à d'autres. 
