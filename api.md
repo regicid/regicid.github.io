@@ -10,7 +10,8 @@ Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram),
 
 En voici la liste complète, ainsi que quelques détails sur les corpus - en particulier la date où nous les avons téléchargés :
 
-|Titre |Période (conseillée) |Volume (en mots)|Code API |Longueur max|Résolution |Seuils | Date de téléchargement | |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------| 
+|Titre |Période (conseillée) |Volume (en mots)|Code API |Longueur max|Résolution |Seuils | Date de téléchargement | 
+|------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------| 
 |Le Monde |1944-2023 |1,5 milliards |lemonde |4gram |Journalière |Aucun | Janvier 2023 | 
 |Presse de Gallica |1789-1950 |57 milliards |presse |3gram |Mensuelle |2gram>1,3gram>1 | Avril 2021 | 
 |Livres de Gallica |1600-1940 |16 milliards |livres |5gram |Annuelle |2gram>1, etc | Avril 2021 | 
