@@ -1,49 +1,68 @@
 # API Gallicagram
 
 ## Introduction
-Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement plusieurs corpus :
+Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement plusieurs corpus, en particulier :
 * Les 3 millions de périodiques (numéros de presse) de *Gallica*, fiable entre 1789 et 1950
 * Les 300 000 monographies (livres) de *Gallica*, fiable entre 1600 et 1940
 * Les 3 millions d'articles des archives du quotidien Le Monde (décembre 1944-décembre 2022)
 * Le gros million de documents du Zeitungsportal, qui regroupe les archives de presse de la Deutsche Digitale Bibliothek, équivalent (en moins bien) de Gallica outre-Rhin. 
-* Un certain nombre de corpus, issus ou non de *Gallica*, voire ci-dessous.
 
-|Titre                         |Période (conseillée)      |Volume (en mots)|Code API          |Longueur max|Résolution                    |Seuils                 |
+En voici la liste complète, ainsi que quelques détails sur les corpus - en particulier la date où nous les avons téléchargés :
+
+|Titre                         |Période (conseillée)      |Volume (en mots)|Code API          |Longueur max|Résolution                    |Seuils                 | Date de téléchargement |
 |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------|
-|Le Monde                      |1944-2023                 |1,5 milliards   |lemonde           |4gram       |Journalière                   |Aucun                  |
-|Presse de Gallica             |1789-1950                 |57 milliards    |presse            |3gram       |Mensuelle                     |2gram>1,3gram>1        |
-|Livres de Gallica             |1600-1940                 |16 milliards    |livres            |5gram       |Annuelle                      |2gram>1, etc           |
-|Deutsches Zeitungsportal (DDB)|1780-1950                 |39 milliards    |ddb               |2gram       |Mensuelle                     |1gram > 1, 2gram>2     |
-|American Stories              |1798-1963                 |20 milliards    |american_stories  |3gram       |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3|
-|Journal de Paris              |1777-1827                 |86 millions     |paris             |2gram       |Journalière                   |2gram>1                |
-|Moniteur Universel            |1789-1869                 |511 millions    |moniteur          |2gram       |Journalière                   |2gram>1                |
-|Journal des Débats            |1789-1944                 |1,2 milliards   |journal_des_debats|1gram       |Journalière                   |Aucun                  |
-|La Presse                     |1836-1869                 |253 millions    |la_presse         |2gram       |Journalière                   |2gram>1                |
+|Le Monde                      |1944-2023                 |1,5 milliards   |lemonde           |4gram       |Journalière                   |Aucun                  | Janvier 2023  |
+|Presse de Gallica             |1789-1950                 |57 milliards    |presse            |3gram       |Mensuelle                     |2gram>1,3gram>1        |  Avril 2021  |
+|Livres de Gallica             |1600-1940                 |16 milliards    |livres            |5gram       |Annuelle                      |2gram>1, etc           | Avril 2021  |
+|Deutsches Zeitungsportal (DDB)|1780-1950                 |39 milliards    |ddb               |2gram       |Mensuelle                     |1gram > 1, 2gram>2     | Août 2023 |
+|American Stories              |1798-1963                 |20 milliards    |american_stories  |3gram       |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3| Octobre 2023 |
+|Journal de Paris              |1777-1827                 |86 millions     |paris             |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Moniteur Universel            |1789-1869                 |511 millions    |moniteur          |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Journal des Débats            |1789-1944                 |1,2 milliards   |journal_des_debats|1gram       |Journalière                   |Aucun                  | Août 2023 |
+|La Presse                     |1836-1869                 |253 millions    |la_presse         |2gram       |Journalière                   |2gram>1                | Août 2023 |
 |Le Constitutionnel            |1821-1913 (très lacunaire)|64 millions     |constitutionnel   |2gram       |Journalière                   |2gram>1                |
-|Le Figaro                     |1854-1952                 |870 millions    |figaro            |2gram       |Journalière                   |2gram>1                |
-|Le Temps                      |1861-1942                 |1 milliard      |temps             |2gram       |Journalière                   |2gram>1                |
-|Le Petit Journal              |1863-1942                 |745 millions    |petit_journal     |2gram       |Journalière                   |2gram>1                |
-|Le Petit Parisien             |1876-1944                 |631 millions    |petit_parisien    |2gram       |Journalière                   |2gram>1                |
-|L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                |
-|Opensubtitles (français)      |1935-2020                 |17 millions     |subtitles        |3gram       |Annuelle                      |Aucun                  |
-|Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  |
-|Rap (Genius)       |1989-février 2024               |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  |
-|Persée       |1789-2023               |1 milliard    |route à part (query_persee)     |2gram       |Annuelle                      |Aucun                  |
+|Le Figaro                     |1854-1952                 |870 millions    |figaro            |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Le Temps                      |1861-1942                 |1 milliard      |temps             |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Le Petit Journal              |1863-1942                 |745 millions    |petit_journal     |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Le Petit Parisien             |1876-1944                 |631 millions    |petit_parisien    |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|L’Humanité                    |1904-1952                 |318 millions    |huma              |2gram       |Journalière                   |2gram>1                | Août 2023 |
+|Opensubtitles (français)      |1935-2020                 |17 millions     |subtitles        |3gram       |Annuelle                      |Aucun                  | Juillet 2023 |
+|Opensubtitles (anglais)       |1930-2020                 |102 millions    |subtitles_en      |3gram       |Annuelle                      |Aucun                  | Juillet 2023 |
+|Rap (Genius)       |1989-février 2024               |20 millions    |rap     |5gram       |Annuelle                      |Aucun                  | Mars 2024 |
+|Persée       |1789-2023               |1 milliard    |route à part (query_persee)     |2gram       |Annuelle                      |Aucun                  | Décembre 2023 |
 
 
 
 Pour l'application, nous avons constitué des bases de données dénombrant le nombre d'occurrences des mots et groupes de mots sur chaque corpus, sur chaque période. Ce sont ces mêmes bases que l'application utilise pour afficher ses graphes (s'il fallait compter à chaque fois les occurrences dans le corpus, cela prendait des semaines). Bref, nous avons fait des calculs interminables pour compter le nombre d'occurrences de chaque mot, et cette information pourrait être utile à d'autres. 
-Ces bases de données étant trop vastes pour être téléchargeables (2 téras au total), nous les rendons interrogeables à travers cette API, qui vous envoie les données au format csv. Vous pouvez par exemple l'utiliser en insérant dans votre code R la ligne suivante:
-``
-tableau = read.csv("https://shiny.ens-paris-saclay.fr/guni/query?mot=patate")
-``
+Ces bases de données étant trop vastes pour être téléchargeables (2 téras au total) et manipulables. À titre d'exemple, nous avons déposé la base des 1grams des archives du *Monde* sur Huggingface au format parquet, à [cette adresse](https://huggingface.co/datasets/regicid/1gram_lemonde), et rendons les autres interrogeables à travers cette API, qui vous envoie les données au format csv. 
 
-Sinon, vous pouvez utiliser les packages R, python et Ruby (voir ci-dessous), qui sont des "wrappers" de cette API.
-Nos bases sont en SQLite, et structurées avec les colonnes suivantes : n (nombre d'occurrences), gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). Là où c'est nécessaire, elles sont doublées d'une structure fulltext (fts5), qui permet des interrogations plus complexes. L'API ajoute une colonne "total", qui donne le nombre total de mots ou groupes de mots de cette taille dans le corpus, sur chaque période. On peut donc calculer la fréquence en divisant la colonne "n" par la colonne "total".  Les bases ont été constituées légèrement différement selon le corpus :
-* Le corpus "presse" a une résolution temporelle mensuelle, le corpus Le Monde une résolution journalière, le corpus "livres" une résolution annuelle.
+Mettons d'emblée les pieds dans le plat. Cette API est simple d'usage, voyez plutôt :
+
+```
+tableau = read.csv("https://shiny.ens-paris-saclay.fr/guni/query?mot=patate")
+```
+
+En insérant cette ligne dans votre code R, vous obtiendrez un dataframe de la fréquence mensuelle du mot patate dans la presse de *Gallica*.
+
+Pour encore plus d'ergonomie, vous pouvez utiliser les packages R, python et Ruby (voir ci-dessous), qui sont des "wrappers" de cette API. Nos bases sont stockées en SQLite, et structurées avec les colonnes suivantes : n (nombre d'occurrences), gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). À titre d'exemple, nous avons déposé la base des 1grams des archives du *Monde* sur Huggingface au format parquet, à [cette adresse](https://huggingface.co/datasets/regicid/1gram_lemonde). Le code de l'API (une banale application codée en python/flask) est disponible à [cette adresse](https://github.com/regicid/api_gallicagram).
+
+
+Là où c'est nécessaire, les bases sont doublées d'une structure fulltext (sqlite fts5), qui permet des interrogations plus complexes. L'API ajoute aussi une colonne "total", qui donne le nombre total de mots ou groupes de mots de cette taille dans le corpus, sur chaque période. On peut donc calculer la fréquence en divisant la colonne "n" par la colonne "total". Ces fichiers de totaux sont situés à [cette adresse](https://github.com/regicid/docker_gallicagram/tree/master/gallicagram), avec le code source de l'application. Elles ont pour nom de fichier "{code_corpus}{n}.csv" - les 1gram du *Monde* s'appellent donc lemonde1.csv.
+
+Les bases ont été constituées légèrement différement selon le corpus :
+* La résolution diffère : journalière pour *Le Monde* et les sous-corpus *Gallica*, mensuelle pour la presse de *Gallica*, annuelle pour les livres de *Gallica*, *Persée*, le corpus rap et nos corpus en langue étrangère.
 * A cause de l'explosion combinatoire et des tailles inégales des  corpus, nous avons calculé jusqu'au 3gram pour le corpus "presse", 4gram pour Le Monde et 5gram pour le corpus "livres". Autrement dit, on pourra chercher "une belle patate" dans le corpus presse, mais pas "une très belle patate". 
 * Dans les corpus Gallica (presse et livres), nous avons exclu toutes les lignes où n=1. Cela permettait de réduire massivement la taille de la base : l'océrisation étant imparfaite, l'immense majorité des lignes sont des erreurs d'OCR. Pas besoin dans Le Monde, où l'OCR a manifestement été relu et corrigé à la main.
-* Notons que nous avons considéré l'apostrophe comme une lettre. 
+
+## Construction des bases de données
+Voici la procédure que nous avons suivie pour constituer ces bases de données :
+* *Scraping* du corpus
+* Tokénisation du corpus (en python, avec pour tokenizer `nltk.RegexpTokenizer(r"[0-9a-zà-ÿ']+")`) (notons que nous avons considéré l'apostrophe comme une lettre).
+* Comptage des ngrams par tranche temporelle (jour, mois ou année), ainsi que par revue dans le cas du corpus *Persée*.
+* Indexation de la table en sqlite : `CREATE UNIQUE INDEX index_bla on gram (gram,annee,mois,jour);` (selon la résolution temporelle).
+* Création des fichiers totaux pour normaliser les fréquences (en sqlite : `select sum(n) as n,annee,mois,jour from gram group by annee,mois,jour;`). 
+* C'est tout !
+
 
 ## Nos routes
 Les bases de données peuvent être interrogées de plusieurs façons. Si en voyant la structure des données décrites ci-dessus, un autre mode vous vient à l'esprit, n'hésitez pas à nous écrire (cette API est essentiellement constituée d'idées d'autres personnes, et son existence même est due à une demande d'Etienne Brunet, que je salue).
