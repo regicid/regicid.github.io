@@ -1,6 +1,15 @@
 <link rel="stylesheet" type="text/css" href="custom.css">
 # API Gallicagram
 
+## Table des matières
+- [Introduction](introduction)
+- [Construction des bases de données](#construction-des-bases-de-donn%C3%A9es)
+- [Nos routes](#nos-routes)
+- [Librairies](#librairies)
+
+
+
+
 ## Introduction
 Pour le projet [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), nous avons téléchargé massivement plusieurs corpus, en particulier :
 * Les 3 millions de périodiques (numéros de presse) de *Gallica*, fiable entre 1789 et 1950
