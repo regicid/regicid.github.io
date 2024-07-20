@@ -22,8 +22,8 @@ En voici la liste complète, ainsi que quelques détails sur les corpus - en par
 |Titre |Période (conseillée) |Volume (en mots)|Code API |Longueur max|Résolution |Seuils | Date de téléchargement | 
 |------------------------------|--------------------------|----------------|------------------|------------|------------------------------|-----------------------| 
 |Le Monde |1944-2023 |1,5 milliards |lemonde |4gram |Journalière |Aucun | Janvier 2023 | 
-|Presse de Gallica |1789-1950 |57 milliards |presse |3gram |Mensuelle |2gram>1,3gram>1 | Avril 2021 | 
-|Livres de Gallica |1600-1940 |16 milliards |livres |5gram |Annuelle |2gram>1, etc | Avril 2021 | 
+|Presse de Gallica |1789-1950 |57 milliards |presse |3gram |Mensuelle |2gram>1,3gram>1 | Mars 2021 | 
+|Livres de Gallica |1600-1940 |16 milliards |livres |5gram |Annuelle |2gram>1, etc | Mars 2021 | 
 |Deutsches Zeitungsportal (DDB)|1780-1950 |39 milliards |ddb |2gram |Mensuelle |1gram > 1, 2gram>2 | Août 2023 | 
 |American Stories |1798-1963 |20 milliards |american_stories |3gram |Annuelle (mensuelle à venir ?)|1gram>1,2gram>2,3gram>3| Octobre 2023 | 
 |Journal de Paris |1777-1827 |86 millions |paris |2gram |Journalière |2gram>1 | Août 2023 | 
@@ -52,7 +52,7 @@ tableau = read.csv("https://shiny.ens-paris-saclay.fr/guni/query?mot=patate")
 
 En insérant cette ligne dans votre code R, vous obtiendrez un dataframe de la fréquence mensuelle du mot patate dans la presse de *Gallica*.
 
-Pour encore plus d'ergonomie, vous pouvez utiliser les packages R, python et Ruby (voir ci-dessous), qui sont des "wrappers" de cette API. Nos bases sont stockées en SQLite, et structurées avec les colonnes suivantes : n (nombre d'occurrences), gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). À titre d'exemple, nous avons déposé la base des 1grams des archives du *Monde* sur Huggingface au format parquet, à [cette adresse](https://huggingface.co/datasets/regicid/1gram_lemonde). Le code de l'API (une banale application codée en python/flask) est disponible à [cette adresse](https://github.com/regicid/api_gallicagram).
+Pour encore plus d'ergonomie, vous pouvez utiliser les packages R, python et Ruby (voir ci-dessous), qui sont des "wrappers" de cette API. Nos bases sont stockées en SQLite, et structurées avec les colonnes suivantes : n (nombre d'occurrences), gram (mot ou syntagme recherché), année, mois et jour (selon le corpus). À titre d'exemple, nous avons déposé la base des 1grams des archives du *Monde* sur Huggingface au format parquet, à [cette adresse](https://huggingface.co/datasets/regicid/1gram_lemonde). Le code de l'API (une banale application codée en python/flask) est disponible à [cette adresse](https://github.com/regicid/api_gallicagram). Dans le dossier scripts_ngram, vous trouverez des scripts python ayant servi à construire les bases sqlite ici présentées.
 
 
 Là où c'est nécessaire, les bases sont doublées d'une structure fulltext (sqlite fts5), qui permet des interrogations plus complexes. L'API ajoute aussi une colonne "total", qui donne le nombre total de mots ou groupes de mots de cette taille dans le corpus, sur chaque période. On peut donc calculer la fréquence en divisant la colonne "n" par la colonne "total". Ces fichiers de totaux sont situés à [cette adresse](https://github.com/regicid/docker_gallicagram/tree/master/gallicagram), avec le code source de l'application. Elles ont pour nom de fichier "{code_corpus}{n}.csv" - les 1gram du *Monde* s'appellent donc lemonde1.csv.
@@ -131,9 +131,9 @@ Pour plus d'informations sur le corpus Persée, les revues qu'il contient et les
 
 ## Librairies
 ### pyllicagram
-Le seul package que nous avons écrit, car python c'est quand même vachement mieux que R (oui, Gallicagram est codé en R, j'en souffre suffisamment, pas besoin de me le rappeler... Fichue dépendance au sentier. Parenthèse fermée)
+Le seul package que nous avons écrit, car python c'est quand même vachement mieux que R (oui, Gallicagram est codé en R, j'en souffre suffisamment, pas besoin de me le rappeler... Fichue dépendance au sentier. Parenthèse fermée.)
 
-Le package contient trois fonctions correspondant aux trois premières routes, il est disponible ici : [https://github.com/regicid/pyllicagram](https://github.com/regicid/pyllicagram).
+Le package contient des fonctions correspondant à chaque route, à l'exception de `query_persee`. Il est disponible ici : [https://github.com/regicid/pyllicagram](https://github.com/regicid/pyllicagram) ainsi que sur pypy.
 
 Pour l'installer : `pip install pyllicagram` si vous êtes sur mac/linux (ou `pip3 install pyllicagram`) . Si vous êtes sur Windows, j'en ai pas la moindre idée et c'est pas ma faute s'il y a encore des gens sur Windows.
 
