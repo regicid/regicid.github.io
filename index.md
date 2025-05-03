@@ -4,7 +4,7 @@ layout: default
 
 <img class="profile-picture" src="picture.jpg" width="400">
 
-Hi! I am a PhD student at the [École Normale Supérieure], in Paris.
+Hi! I am a PhD student at the École Normale Supérieure, in Paris.
 
 ## Research Interest
 I'm lost somewhere between social sciences, psychology and economics. I am currently (2025) finishing my PhD on the 'desperation threshold model'. I'm also interested in history, where I made my bachelor. On my free time I develop the French lexicometrics platform [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
