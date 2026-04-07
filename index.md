@@ -4,11 +4,11 @@ layout: default
 
 <img class="profile-picture" src="picture.jpg" width="400">
 
-Hi! I am a PhD student at the École Normale Supérieure, in Paris.
+Hi! I am a postdoc at the London School of Economics, working on the [rep2si](https://rep2si.github.io/) project.
 
 ## Research Interest
-I'm lost somewhere between social sciences, psychology and economics. I am currently (2025) finishing my PhD on the 'desperation threshold model'. I'm also interested in history, where I made my bachelor. On my free time I develop the French lexicometrics platform [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
-## Publications
+I'm lost somewhere between social sciences, psychology and economics. I'm also interested in history, where I made my bachelor. On my free time I develop the French lexicometrics platform [Gallicagram](https://shiny.ens-paris-saclay.fr/app/gallicagram), of which you can find an outline [here](https://odhn.ens.psl.eu/newsroom/gallicagram-un-outil-de-lexicometrie-pour-la-recherche).
+## Publications (updated in early 2025)
 - **de Courson B.**, Frankenhuis W., Nettle D.  
   [*Poverty is associated with both risk avoidance and risk taking: empirical evidence for the desperation threshold model from the UK and France*](https://royalsocietypublishing.org/doi/10.1098/rspb.2024.2071), *Proceedings of the Royal Society B*, 2025
 
