@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Les Prénoms de Cairn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,6 +134,17 @@
   .suggestions button:hover,
   .suggestions button:focus-visible,
   .suggestions button.active{ background: var(--line); }
+
+  @media (max-width: 600px){
+    #q{
+      font-size: 1.8rem;
+      padding: 0.7rem 0.1rem 0.8rem;
+    }
+    .suggestions button{
+      font-size: 1.15rem;
+      padding: 0.75rem 0.9rem;
+    }
+  }
 
   .chips{
     display: flex;
@@ -508,6 +520,7 @@ return Plotly;
 <script>
 (function(){
   var DATA = null, LIST = null, SORTED = null;
+  var mobileQuery = window.matchMedia('(max-width: 600px)');
 
   function norm(s){
     return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -765,12 +778,19 @@ function themeColors(){
       }
     };
 
+    if(mobileQuery.matches){
+      // On touch screens, a drag on the chart would otherwise open a zoom-select
+      // box instead of letting the page scroll. Hover/tap tooltips still work.
+      layout.dragmode = false;
+    }
+
     var config = { displayModeBar: false, responsive: true, scrollZoom: false };
     Plotly.react('cloud', [diag, trace], layout, config);
   }
 
   var themeQuery = window.matchMedia('(prefers-color-scheme: dark)');
   themeQuery.addEventListener('change', function(){ buildCloud(); });
+  mobileQuery.addEventListener('change', function(){ buildCloud(); });
   new MutationObserver(function(){ buildCloud(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 })();
 </script>
