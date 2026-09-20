@@ -332,7 +332,7 @@
 
 <div class="wrap">
   <h1>Votre prénom signe&#8209;t&#8209;il plus, ou moins, qu'il ne devrait&nbsp;?</h1>
-  <p class="intro">Pour chaque prénom, on compare son nombre réel de signatures dans <em>Cairn&#8209;SHS</em> au nombre <em>attendu</em> si les auteur&middot;ices étaient recruté&middot;es parmi les naissances françaises de 1900 à 2010.</p>
+  <p class="intro">Pour chaque prénom, on compare son nombre réel de signatures dans <em>Cairn&#8209;SHS</em> au nombre <em>attendu</em> si les auteur&middot;ices étaient recruté&middot;es indépendemment de leur prénom parmi les naissances françaises de 1900 à 2010.</p>
 
   <div class="search-block">
     <input id="q" type="text" placeholder="Tapez votre prénom…" autocomplete="off" spellcheck="false" aria-label="Chercher un prénom" aria-expanded="false" role="combobox" aria-controls="suggestions" aria-autocomplete="list">
@@ -351,7 +351,7 @@
   <details>
     <summary>Comment le nombre « attendu » est calculé</summary>
     <p>
-      Les naissances INSEE 1900–2010 sont regroupées par décennie et par genre, puis on ajuste par régression à coefficients positifs (NNLS) le poids de chaque tranche décennie&times;genre pour reconstituer au mieux, prénom par prénom, le nombre observé de signatures dans Cairn. Le nombre attendu est la prédiction de ce modèle&nbsp;; l'écart au réel donne un <em>odds ratio</em> (OR) et sa significativité (test&nbsp;<code>z</code>). Seuls les prénoms totalisant au moins 100&nbsp;naissances sont retenus.
+      Les naissances INSEE 1900–2010 sont regroupées par décennie et par genre, puis on ajuste par régression à coefficients positifs (NNLS) le poids de chaque tranche décennie&times;genre pour reconstituer au mieux, prénom par prénom, le nombre observé de signatures dans Cairn. Le nombre attendu est la prédiction de ce modèle&nbsp;; l'écart au réel donne un <em>odds ratio</em> (OR) et sa significativité (test&nbsp;<code>z</code>). Le test néglige le fait que les signatures ne sont pas indépendantes les unes des autres - une personne aura tendance à signer plusieurs articles, d'où une surdispersion.  
     </p>
   </details>
 </div>
@@ -680,7 +680,7 @@ return Plotly;
         '<dl class="stats">' +
           '<div class="stat"><dt>Signatures Cairn</dt><dd>'+fmtInt(d.c)+'</dd></div>' +
           '<div class="stat"><dt>Attendues</dt><dd>'+fmtInt(d.a)+'</dd></div>' +
-          '<div class="stat"><dt>Sur-/sous-repr.</dt><dd>'+pctileShown+' %'+'</dd></div>' +
+          '<div class="stat"><dt>Percentile.</dt><dd>'+pctileShown+' %'+'</dd></div>' +
         '</dl>' +
         '<p class="footnote">Sa '+(over?'sur':'sous')+'-représentation est '+rankText+' (n = '+fmtInt(n)+').</p>' +
       '</div>';
