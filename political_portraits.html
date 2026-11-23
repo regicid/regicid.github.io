@@ -338,8 +338,9 @@ details.cb .cbtext { white-space: normal; }
     <section class="notes" aria-labelledby="t-notes">
     <h2 id="t-notes">Computing the scores</h2>
     <div class="nl" data-l="en">
-    <p>Le Monde, 1944 to November 2026 (3.2 million articles, every section), and the politics sections of 32 French news sites, 2008 to November 2026
-      (1.48 million articles; the section comes from <code>n-gramsci/rubriques-presse</code>, and from the same classifier after June 2026). People are found by
+    <p>Le Monde, 1944 to November 2026 (3.2 million articles, every section), shown as two newspapers: « Le Monde · politique » (its 389,000 politics articles)
+      and « Le Monde · other sections »; and the politics sections of 32 French news sites, 2008 to November 2026
+      (1.48 million articles). The section comes from <code>n-gramsci/rubriques-presse</code>, and from the same classifier after June 2026 and for the 0.5% of Le Monde articles it lacks. People are found by
       named-entity recognition and Qwen coreference. Each passage centred on a mention is scored by <code>portrayal-camembert-large</code> v2 (seed 0), trained on codebook v4.</p>
     <p><b>Valence</b> is P(positive) − P(negative) judgement of the person. <b>Extremism</b> is P(framed as radical or extreme) − P(framed as moderate).
       <b>Dynamics</b> is P(rising in the race) − P(declining). All three run from −1 to +1. Most passages carry no judgement, so averages sit close to 0.</p>
@@ -353,8 +354,9 @@ details.cb .cbtext { white-space: normal; }
       Quarterly and monthly steps are computed over all newspapers together.</p>
     </div>
     <div class="nl" data-l="fr" lang="fr">
-    <p>Le Monde, de 1944 à novembre 2026 (3,2 millions d’articles, toutes rubriques), et les rubriques politiques de 32 sites d’information français, de 2008 à novembre 2026
-      (1,48 million d’articles ; la rubrique vient de <code>n-gramsci/rubriques-presse</code>, puis du même classifieur après juin 2026). Les personnes sont repérées par
+    <p>Le Monde, de 1944 à novembre 2026 (3,2 millions d’articles, toutes rubriques), présenté comme deux journaux : « Le Monde · politique » (ses 389 000 articles politiques)
+      et « Le Monde · autres rubriques » ; et les rubriques politiques de 32 sites d’information français, de 2008 à novembre 2026
+      (1,48 million d’articles). La rubrique vient de <code>n-gramsci/rubriques-presse</code>, puis du même classifieur après juin 2026 et pour les 0,5 % d’articles du Monde qui y manquent. Les personnes sont repérées par
       reconnaissance d’entités nommées et coréférence Qwen. Chaque passage centré sur une mention est noté par <code>portrayal-camembert-large</code> v2 (graine 0), entraîné sur le codebook v4.</p>
     <p>La <b>valence</b> vaut P(jugement positif) − P(jugement négatif) sur la personne. L’<b>extrémisme</b> vaut P(présentée comme radicale ou extrême) − P(présentée comme modérée).
       La <b>dynamique</b> vaut P(en progression dans la course) − P(en recul). Les trois vont de −1 à +1. La plupart des passages ne portent aucun jugement : les moyennes restent proches de 0.</p>
