@@ -437,9 +437,9 @@ const dec = x => LANG === "fr" ? String(x).replace(".", ",") : String(x);
 const plural = (n, en1, enN, fr1, frN) => n === 1 ? L(en1, fr1) : L(enN, frN);
 const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6"], MAXP = SERIES.length;
 const DEFAULT = ["emmanuel macron", "marine le pen", "jean luc melenchon"];
-const MAIN = ["lemonde", "lemonde_politique", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "marianne", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
+const MAIN = ["lemonde_politique", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "marianne", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
 const TABS = ["top", "corpora", "time", "method"];
-const LS_OUT = "pp-newspapers";
+const LS_OUT = "pp-newspapers-v2";   // v2: Le Monde split into politique / other sections
 // Where the data lives, relative to this page: the site/ folder made by build_site.py (index.json, ranking.json, data/b_*.json).
 const DATA = "site/";
 const getJSON = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + " " + r.status); return r.json(); });
