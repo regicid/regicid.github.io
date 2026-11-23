@@ -39,6 +39,7 @@ header { display: grid; gap: 6px; }
 .controls { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; }
 .row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
 .field { display: grid; gap: 4px; min-width: 0; }
+.field[hidden] { display: none; }
 .field > span { font: 500 13px/1 var(--f-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .search { position: relative; flex: 1 1 280px; min-width: 0; }
 .search input { width: 100%; box-sizing: border-box; font: 16px var(--f-body); padding: 9px 12px; border-radius: 8px;
@@ -271,6 +272,11 @@ details.cb .cbtext { white-space: normal; }
           <button type="button" data-v="on" aria-pressed="true">Show</button>
           <button type="button" data-v="off" aria-pressed="false">Hide</button>
         </div></div>
+      <div class="field" data-tabs="top corpora"><span>Scores</span>
+        <div class="seg" id="adj" role="group" aria-label="Scores">
+          <button type="button" data-v="raw" aria-pressed="true">Raw</button>
+          <button type="button" data-v="rel" aria-pressed="false">Relative to each paper</button>
+        </div></div>
     </div>
   </div>
 
@@ -326,12 +332,18 @@ details.cb .cbtext { white-space: normal; }
   <div class="panel" id="p-time" role="tabpanel" aria-labelledby="tab-time" hidden>
     <section class="card" aria-labelledby="t-time">
       <div class="cardhead"><h2 id="t-time">Score over time</h2>
+        <div class="row" style="gap:10px 16px">
+        <div class="field"><span>Show</span>
+          <div class="seg" id="tgap" role="group" aria-label="Show">
+            <button type="button" data-v="score" aria-pressed="true">Score</button>
+            <button type="button" data-v="gap" aria-pressed="false">Gap with other papers</button>
+          </div></div>
         <div class="field"><span>Time step</span>
           <div class="seg" id="res" role="group" aria-label="Time step">
             <button type="button" data-v="year" aria-pressed="true">Year</button>
             <button type="button" data-v="quarter" aria-pressed="false">Quarter</button>
             <button type="button" data-v="month" aria-pressed="false">Month</button>
-          </div></div></div>
+          </div></div></div></div>
       <div class="sub" id="time-sub"></div>
       <div class="hint" id="reshint" hidden></div>
       <div class="chart" id="timechart"></div>
@@ -479,7 +491,11 @@ const fmt = x => (x >= 0 ? "+" : "−") + dec(Math.abs(x).toFixed(3));
 let nf = new Intl.NumberFormat(LOC());
 
 const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score",
-  ci: (() => { try { return localStorage.getItem("pp-ci") !== "off"; } catch (e) { return true; } })()};
+  ci: (() => { try { return localStorage.getItem("pp-ci") !== "off"; } catch (e) { return true; } })(),
+  adj: (() => { try { return localStorage.getItem("pp-adj") === "rel"; } catch (e) { return false; } })(),
+  tgap: false};
+// "gap" view: the selected newspapers minus every other newspaper, same person, same year
+const gapOn = () => S.tgap && !!S.oset && S.oset.size > 0;
 // half-width of the drawn interval: 0 when intervals are hidden
 const Z = () => S.ci ? 1.96 : 0;
 
@@ -521,6 +537,14 @@ const labT = lab => { const y = +lab.slice(0, 4); return S.res === "month" ? y +
 function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && (!S.oset || S.oset.has(d.y.o[i]))); }
 
 function series(d) {
+  if (gapOn()) {
+    const all = d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]));
+    return [...groupBy(all, j => d.y.year[all[j]])].map(([y, js]) => {
+      const ii = js.map(j => all[j]), a = merge(d.y, ii.filter(i => S.oset.has(d.y.o[i])), S.dim), b = merge(d.y, ii.filter(i => !S.oset.has(d.y.o[i])), S.dim);
+      if (!a || !b || b.n < S.minn) return null;
+      return {t: y + 0.5, label: String(y), R: a.R - b.R, se: Math.hypot(a.se, b.se), n: a.n, nOther: b.n};
+    }).filter(Boolean).sort((a, b) => a.t - b.t);
+  }
   if (S.res === "year" || !hasM(d)) {
     const idx = yearCells(d), g = groupBy(idx, j => d.y.year[idx[j]]);
     return [...g].map(([y, js]) => ({t: y + 0.5, label: String(y), ...merge(d.y, js.map(j => idx[j]), S.dim)})).sort((a, b) => a.t - b.t);
@@ -561,8 +585,8 @@ function drawTime(data) {
     svg.append(el("line", {x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: Math.abs(v) < 1e-12 ? zero : grid, "stroke-width": Math.abs(v) < 1e-12 ? 1.25 : 1}));
     svg.append(el("text", {x: m.l - 8, y: Y(v) + 4, "text-anchor": "end"}, v === 0 ? "0" : (v > 0 ? "+" : "−") + dec(+Math.abs(v).toFixed(3))));
   }
-  svg.append(el("text", {class: "pole", x: m.l, y: 12}, `↑ ${DIMS[S.dim].pos}`));
-  svg.append(el("text", {class: "pole", x: m.l, y: H - 4}, `↓ ${DIMS[S.dim].neg}`));
+  svg.append(el("text", {class: "pole", x: m.l, y: 12}, gapOn() ? L(`↑ ${DIMS[S.dim].pos}, more here than in other papers`, `↑ ${DIMS[S.dim].pos}, plus ici que dans les autres journaux`) : `↑ ${DIMS[S.dim].pos}`));
+  svg.append(el("text", {class: "pole", x: m.l, y: H - 4}, gapOn() ? L(`↓ ${DIMS[S.dim].neg}, more here than in other papers`, `↓ ${DIMS[S.dim].neg}, plus ici que dans les autres journaux`) : `↓ ${DIMS[S.dim].neg}`));
   const span = t1 - t0, ystep = span > 60 ? (narrow ? 20 : 10) : span > 30 ? (narrow ? 10 : 5) : span > 12 ? (narrow ? 4 : 2) : 1;
   for (let y = t0; y <= t1; y++) if ((ystep > 2 ? y % ystep === 0 : (y - t0) % ystep === 0) && X(y) < W - m.r + 1) {
     svg.append(el("line", {x1: X(y), x2: X(y), y1: H - m.b, y2: H - m.b + 4, stroke: zero}));
@@ -609,7 +633,7 @@ function drawTime(data) {
     const rows = ser.map(s => ({k: s.k, yearly: s.yearly, p: s.pts.find(p => s.yearly ? Math.floor(p.t) === Math.floor(best) : p.t === best)})).filter(x => x.p);
     const lab = (rows.find(x => !x.yearly) || rows[0])?.p.label ?? "";
     tipAt(box, tip, X(best) * r.width / W, ev.clientY - box.getBoundingClientRect().top,
-      `<b>${lab}</b>` + rows.map(({k, p}) => `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(k)]})"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(p.R)} ± ${dec((1.96 * p.se).toFixed(3))}</span><span class="n">${nf.format(p.n)} articles${rows.length && ser.find(s => s.k === k).yearly ? L(`, year ${p.label}`, `, année ${p.label}`) : ""}</span></div>`).join(""));
+      `<b>${lab}</b>` + rows.map(({k, p}) => `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(k)]})"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(p.R)} ± ${dec((1.96 * p.se).toFixed(3))}</span><span class="n">${nf.format(p.n)} articles${p.nOther != null ? L(` here, ${nf.format(p.nOther)} elsewhere`, ` ici, ${nf.format(p.nOther)} ailleurs`) : ""}${rows.length && ser.find(s => s.k === k).yearly ? L(`, year ${p.label}`, `, année ${p.label}`) : ""}</span></div>`).join(""));
   };
   const brushing = attachBrush(svg, hit, m, W, H, t0, t1);
   hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
@@ -706,7 +730,7 @@ function drawOutlets(data) {
   if (S.oset && !S.oset.size) { box.innerHTML = `<div class="empty">${L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")}</div>`; $("out-sub").textContent = ""; return; }
   const per = data.map(({k, d}) => {
     const idx = yearCells(d), g = groupBy(idx, j => d.y.o[idx[j]]), out = new Map();
-    for (const [o, js] of g) { const r = merge(d.y, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) out.set(o, r); }
+    for (const [o, js] of g) { const r = mergeP(k, d, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) out.set(o, r); }
     return {k, out};
   });
   const os = [...new Set(per.flatMap(p => [...p.out.keys()]))];
@@ -769,7 +793,7 @@ function drawHeat(data) {
   if (S.oset && !S.oset.size) { box.innerHTML = `<div class="empty">${L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")}</div>`; $("heat-sub").textContent = ""; return; }
   const {k, d} = data[S.heat], idx = yearCells(d), cells = new Map(), tot = new Map();
   for (const [ck, js] of groupBy(idx, j => d.y.o[idx[j]] + "|" + d.y.year[idx[j]])) {
-    const r = merge(d.y, js.map(j => idx[j]), S.dim); if (!r || r.n < S.minn) continue;
+    const r = mergeP(k, d, js.map(j => idx[j]), S.dim); if (!r || r.n < S.minn) continue;
     cells.set(ck, r); const o = +ck.split("|")[0]; tot.set(o, (tot.get(o) || 0) + r.n);
   }
   if (!cells.size) { box.innerHTML = `<div class="empty">${L(`No newspaper-year reaches ${S.minn} articles on ${esc(displayName(k))} in ${S.y0}–${S.y1}.`, `Aucune case journal × année n’atteint ${S.minn} articles sur ${esc(displayName(k))} en ${S.y0}–${S.y1}.`)}</div>`; $("heat-sub").textContent = ""; return; }
@@ -818,7 +842,7 @@ function drawSummary(data) {
   if (!data.length) { box.innerHTML = `<div class="empty">${L("Add a person to see their scores.", "Ajoutez une personne pour voir ses scores.")}</div>`; return; }
   const rows = data.map(({k, d}) => { const idx = yearCells(d), e = S.index.names[S.byKey.get(k)];
     const r = {k, name: e[1], alts: e[4], n: idx.reduce((a, i) => a + d.y.n_docs[i], 0), col: css(SERIES[S.sel.indexOf(k)])};
-    for (const dm of Object.keys(DIMS)) r[dm] = merge(d.y, idx, dm); return r; });
+    for (const dm of Object.keys(DIMS)) r[dm] = mergeP(k, d, idx, dm); return r; });
   const W = Math.max(box.clientWidth - 8, 680), rowH = 30, top = 44, bot = 24, left = 150, gp = 28;
   const pw = (W - left - gp * 3 - 8) / 4, H = top + bot + rows.length * rowH;
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": L("Articles and average scores of each person", "Articles et scores moyens de chaque personne")});
@@ -875,6 +899,37 @@ const EXT_ALL = {en: {valence: ["Judged most positively", "Judged most negativel
   dynamique: ["En plus forte progression", "En plus fort recul", "Plus fortes progressions et plus forts reculs"],
   n: ["Les plus cités", "Les moins cités", "Les plus et les moins cités"]}};
 let EXT = EXT_ALL[LANG];
+// Newspaper baseline. For each newspaper × year, the mention-weighted mean score of everyone in ranking.json.
+// A relative score is a person's score minus the baseline they would get from the same newspapers in the same
+// years, each cell weighted like the person's own cells. The person's own cells are left out of the baseline
+// (leave-one-out), so 0 means "treated like the other people these papers wrote about that year".
+const BASE = {sums: null, keys: null};
+function baseSums() {
+  if (BASE.sums) return BASE.sums;
+  const d = RK.data, om = d.outlets.map(o => S.outlets.indexOf(o)), sums = new Map();
+  d.year.forEach((y, j) => { const key = om[d.o[j]] + "|" + y; let c = sums.get(key);
+    if (!c) sums.set(key, c = {W: 0, valence: 0, extremisme: 0, dynamique: 0});
+    c.W += d.W[j]; for (const dm of Object.keys(DIMS_ALL.en)) c[dm] += d.W[j] * d[dm][j]; });
+  BASE.keys = new Set(d.keys);
+  return BASE.sums = sums;
+}
+// cells: score store (W + dimension arrays), idx: cell indices, oy(i): "outlet|year" of cell i, loo: drop the cell itself
+function expected(cells, idx, dm, oy, loo) {
+  const sums = baseSums(); let W = 0, E = 0;
+  for (const i of idx) { const c = sums.get(oy(i)); if (!c) continue;
+    const w = loo ? c.W - cells.W[i] : c.W; if (w <= 1e-9) continue;
+    E += cells.W[i] * (loo ? c[dm] - cells.W[i] * cells[dm][i] : c[dm]) / w; W += cells.W[i]; }
+  return W ? E / W : null;
+}
+// merge for one person's yearly cells, made relative when the toggle is on
+function mergeP(k, d, idx, dm) {
+  const r = merge(d.y, idx, dm); if (!r || !S.adj) return r;
+  const E = expected(d.y, idx, dm, i => d.y.o[i] + "|" + d.y.year[i], BASE.keys.has(k));
+  return E == null ? null : {...r, R: r.R - E, raw: r.R};
+}
+const ADJ_NOTE = () => L("Relative scores: each value minus how the same newspapers, in the same years, treated the other people scored. 0 means treated like everyone else.",
+  "Scores relatifs : chaque valeur moins le traitement que les mêmes journaux, les mêmes années, réservent aux autres personnes notées. 0 signifie traité comme les autres.");
+
 async function drawRanking() {
   const box = $("rank");
   $("t-rank").textContent = EXT[RKS()][2];
@@ -889,7 +944,8 @@ async function drawRanking() {
     if (!idx.length) continue;
     const n = idx.reduce((a, j) => a + d.n_docs[j], 0); if (n < RK.min) continue;
     const r = {i, n, name: d.names[i], key: d.keys[i]};
-    for (const dm of Object.keys(DIMS)) { const m = merge(d, idx, dm); r[dm] = m.R; r[dm + "_ci"] = 1.96 * m.se; }
+    for (const dm of Object.keys(DIMS)) { const m = merge(d, idx, dm); r[dm] = m.R; r[dm + "_ci"] = 1.96 * m.se;
+      if (S.adj) { const E = expected(d, idx, dm, j => om[d.o[j]] + "|" + d.year[j], true); if (E != null) r[dm] -= E; } }
     people.push(r);
   }
   people.sort((a, b) => b[RKS()] - a[RKS()]);
@@ -903,6 +959,7 @@ async function drawRanking() {
     `${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "personne est citée" : "personnes sont citées"} dans au moins ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `Toutes, classées par ${what} ; les ${e} de chaque bout sont signalées.` : `Seuls les deux bouts sont affichés : les ${e} plus hautes et les ${e} plus basses en ${what} ; les ${nf.format(mid)} du milieu sont masquées.`)
       : `Toutes, classées par ${what}.`) + ` Points : moyennes${S.ci ? " avec intervalles à 95 %" : ""} ; chaque panneau a sa propre échelle. Cliquez sur un nom pour suivre la personne dans le temps.`);
+  if (S.adj) $("rk-sub").textContent += " " + ADJ_NOTE();
   // layout: band labels, rows, and the gap between the two ends
   const items = [];
   if (split) {
@@ -993,17 +1050,29 @@ async function render() {
     if (!data.length) { for (const id of ["byout", "heat", "summary"]) $(id).innerHTML = `<div class="empty">${L("Add a person above to compare newspapers.", "Ajoutez une personne ci-dessus pour comparer les journaux.")}</div>`;
       for (const id of ["out-sub", "heat-sub", "sum-sub"]) $(id).textContent = ""; $("heat-who").hidden = true; return; }
     $("sum-sub").textContent = per + papers;
+    if (S.adj) { try { await loadRanking(); baseSums(); } catch (e) { S.adj = false; setSeg("adj", "raw"); } if (my !== token) return; }
     drawOutlets(data); drawHeat(data); drawSummary(data);
+    if (S.adj) { if ($("out-sub").textContent) $("out-sub").textContent += " " + ADJ_NOTE();
+      if ($("heat-sub").innerHTML) $("heat-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
+      $("sum-sub").textContent += ". " + ADJ_NOTE(); }
     return;
   }
   // Quarter / month are available as soon as one selected person has usable monthly data;
   // the others are drawn by year (dashed) instead of locking everyone to yearly.
-  const anyM = data.some(x => hasM(x.d));
+  const anyM = !gapOn() && data.some(x => hasM(x.d));
+  setSeg("tgap", S.tgap ? "gap" : "score");
   document.querySelectorAll("#res button").forEach(b => { if (b.dataset.v !== "year") b.disabled = !anyM; });
   if (!anyM && S.res !== "year") setSeg("res", S.res = "year");
   const hint = $("reshint"), fb = data.filter(x => fallback(x.d)).map(x => esc(displayName(x.k)));
   const filtered = S.oset && data.some(x => x.d.m && !x.d.m.o);
-  if (data.length && !anyM) {
+  if (S.tgap && !gapOn()) {
+    hint.hidden = false;
+    hint.innerHTML = L("Pick some newspapers in the filters above: the gap compares them with all the other newspapers. Showing plain scores for now.",
+      "Choisissez des journaux dans les filtres ci-dessus : l’écart les compare à tous les autres journaux. Scores simples en attendant.");
+  } else if (gapOn()) {
+    hint.hidden = false;
+    hint.innerHTML = L("The gap is computed by year.", "L’écart est calculé par année.");
+  } else if (data.length && !anyM) {
     hint.hidden = false;
     hint.innerHTML = filtered ? L("Quarter and month steps cover all newspapers together.", "Les pas trimestriel et mensuel portent sur tous les journaux ensemble.") + ` <button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>`
       : L("Quarter and month steps need at least one selected person in 1,000 articles or more.", "Les pas trimestriel et mensuel demandent qu’au moins une personne sélectionnée figure dans 1 000 articles ou plus.");
@@ -1016,6 +1085,8 @@ async function render() {
   if (!data.length) { $("timechart").innerHTML = `<div class="empty">${L("Add a person above to follow them over time.", "Ajoutez une personne ci-dessus pour la suivre dans le temps.")}</div>`; $("men").innerHTML = ""; $("men-sub").textContent = ""; $("ttable").innerHTML = ""; $("time-sub").textContent = ""; return; }
   $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}, ${S.res === "year" ? "yearly" : S.res === "quarter" ? "quarterly" : "monthly"} means${S.ci ? " with 95% intervals" : ""}${papers}. Drag across the chart to zoom, double-click to reset.`, `${per} · ${DIMS[S.dim].label}, moyennes ${S.res === "year" ? "annuelles" : S.res === "quarter" ? "trimestrielles" : "mensuelles"}${S.ci ? " avec intervalles à 95 %" : ""}${papers}. Faites glisser sur le graphique pour zoomer, double-cliquez pour revenir.`);
   $("men-sub").textContent = L(`${per} · Articles mentioning the person, ${S.res === "year" ? "per year" : S.res === "quarter" ? "per quarter" : "per month"}${papers}. Raw counts: the corpus grows over time, so contrasts between people are more meaningful than contrasts between years.`, `${per} · Articles mentionnant la personne, ${S.res === "year" ? "par an" : S.res === "quarter" ? "par trimestre" : "par mois"}${papers}. Comptes bruts : le volume du corpus augmente au cours du temps, les contrastes entre personnes sont donc plus pertinents que les contrastes entre années.`);
+  if (gapOn()) $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}: score in the selected newspapers minus the same person’s score in all other newspapers, each year${S.ci ? ", with 95% intervals" : ""}. Above 0: ${DIMS[S.dim].pos} more here than elsewhere. A flat line means the person moved the same way everywhere.`,
+    `${per} · ${DIMS[S.dim].label} : score dans les journaux sélectionnés moins le score de la même personne dans tous les autres journaux, chaque année${S.ci ? ", avec intervalles à 95 %" : ""}. Au-dessus de 0 : ${DIMS[S.dim].pos}, plus ici qu’ailleurs. Une ligne plate signifie que la personne a évolué de la même façon partout.`);
   drawTime(data); drawMentions(data);
 }
 $("reshint").addEventListener("click", e => { if (e.target.closest("[data-act=all]")) setOutlets(new Set(S.outlets.map((_, i) => i))); });
@@ -1083,6 +1154,10 @@ setSeg("ci", S.ci ? "on" : "off");
 // close the score help on outside click or Escape
 document.addEventListener("click", e => { const h = $("scorehelp"); if (h.open && !h.contains(e.target)) h.open = false; });
 document.addEventListener("keydown", e => { const h = $("scorehelp"); if (e.key === "Escape" && h.open) { h.open = false; h.querySelector("summary").focus(); } });
+setSeg("adj", S.adj ? "rel" : "raw");
+$("tgap").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.tgap = b.dataset.v === "gap"; setSeg("tgap", b.dataset.v); render(); });
+$("adj").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.adj = b.dataset.v === "rel"; setSeg("adj", b.dataset.v);
+  try { localStorage.setItem("pp-adj", b.dataset.v); } catch (er) {} render(); });
 $("ci").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.ci = b.dataset.v === "on"; setSeg("ci", b.dataset.v);
   try { localStorage.setItem("pp-ci", b.dataset.v); } catch (er) {} render(); });
 function syncYr() {
@@ -1164,7 +1239,7 @@ const FR = {
   "Show the numbers as a table": "Afficher les chiffres en tableau", "How often mentioned": "Fréquence des mentions",
   "Our main tool: BERT": "L’outil principal : BERT", "Computing the scores": "Le calcul des scores", "How the models are trained": "Méthode d’entraînement des modèles", "Code and models": "Code et modèles", "Loading the name index…": "Chargement de l’index des noms…",
   "Views": "Vues", "Light theme": "Thème clair", "Dark theme": "Thème sombre", "Filters": "Filtres", "From year": "Année de début", "To year": "Année de fin",
-  "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "What do the scores mean?": "Que mesurent ces scores ?", "Hide": "Masquer", "Rank people by": "Classer les personnes par",
+  "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "What do the scores mean?": "Que mesurent ces scores ?", "Hide": "Masquer", "Raw": "Bruts", "Gap with other papers": "Écart avec les autres journaux", "Relative to each paper": "Relatifs à chaque journal", "Rank people by": "Classer les personnes par",
   "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée"};
 const STATIC = [];
 function collectStatic() {
