@@ -240,6 +240,11 @@ details.cb .cbtext { white-space: normal; }
         <select id="minn" aria-label="Minimum articles per point">
           <option value="5">5 articles</option><option value="10" selected>10 articles</option>
           <option value="30">30 articles</option><option value="100">100 articles</option></select></div>
+      <div class="field"><span>95% intervals</span>
+        <div class="seg" id="ci" role="group" aria-label="95% intervals">
+          <button type="button" data-v="on" aria-pressed="true">Show</button>
+          <button type="button" data-v="off" aria-pressed="false">Hide</button>
+        </div></div>
     </div>
   </div>
 
@@ -448,7 +453,10 @@ const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).
 const fmt = x => (x >= 0 ? "+" : "−") + dec(Math.abs(x).toFixed(3));
 let nf = new Intl.NumberFormat(LOC());
 
-const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score"};
+const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score",
+  ci: (() => { try { return localStorage.getItem("pp-ci") !== "off"; } catch (e) { return true; } })()};
+// half-width of the drawn interval: 0 when intervals are hidden
+const Z = () => S.ci ? 1.96 : 0;
 
 const key = s => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -472,22 +480,27 @@ function merge(c, idx, dim) {
 const groupBy = (arr, f) => { const m = new Map(); arr.forEach((x, i) => { const k = f(i); if (k == null) return; (m.get(k) || m.set(k, []).get(k)).push(i); }); return m; };
 
 const inPeriod = y => y >= S.y0 && y <= S.y1;
-function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && (!S.oset || S.oset.has(d.y.o[i]))); }
-
-function series(d) {
-  if (S.res === "year" || !d.m) {
-    const idx = yearCells(d), g = groupBy(idx, j => d.y.year[idx[j]]);
-    return [...g].map(([y, js]) => ({t: y + 0.5, label: String(y), ...merge(d.y, js.map(j => idx[j]), S.dim)})).sort((a, b) => a.t - b.t);
-  }
-  const m = d.m, g = groupBy(m.month, i => {
+// Monthly cells are usable if they exist and, when newspapers are filtered, carry an outlet index (m.o, like y.o).
+const hasM = d => !!d.m && (!S.oset || !!d.m.o);
+// Is this person drawn by year while a finer step is selected?
+const fallback = d => S.res !== "year" && !hasM(d);
+function monthGroups(m) {
+  return groupBy(m.month, i => {
+    if (S.oset && !S.oset.has(m.o[i])) return null;
     const [y, mo] = m.month[i].split("-").map(Number);
     if (!inPeriod(y)) return null;
     return S.res === "month" ? m.month[i] : `${y}-Q${Math.floor((mo - 1) / 3) + 1}`;
   });
-  return [...g].map(([lab, idx]) => {
-    const y = +lab.slice(0, 4), t = S.res === "month" ? y + (+lab.slice(5) - 0.5) / 12 : y + (+lab.slice(6) - 0.5) / 4;
-    return {t, label: lab, ...merge(m, idx, S.dim)};
-  }).sort((a, b) => a.t - b.t);
+}
+const labT = lab => { const y = +lab.slice(0, 4); return S.res === "month" ? y + (+lab.slice(5) - 0.5) / 12 : y + (+lab.slice(6) - 0.5) / 4; };
+function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && (!S.oset || S.oset.has(d.y.o[i]))); }
+
+function series(d) {
+  if (S.res === "year" || !hasM(d)) {
+    const idx = yearCells(d), g = groupBy(idx, j => d.y.year[idx[j]]);
+    return [...g].map(([y, js]) => ({t: y + 0.5, label: String(y), ...merge(d.y, js.map(j => idx[j]), S.dim)})).sort((a, b) => a.t - b.t);
+  }
+  return [...monthGroups(d.m)].map(([lab, idx]) => ({t: labT(lab), label: lab, ...merge(d.m, idx, S.dim)})).sort((a, b) => a.t - b.t);
 }
 
 function niceTicks(lo, hi, n = 5) {
@@ -507,14 +520,14 @@ function tipAt(box, tip, x, y, html) {
 
 function drawTime(data) {
   const box = $("timechart"); box.innerHTML = "";
-  const ser = data.map(({k, d}) => ({k, pts: series(d).filter(p => p.n >= S.minn)}));
+  const ser = data.map(({k, d}) => ({k, yearly: fallback(d), pts: series(d).filter(p => p.n >= S.minn)}));
   const all = ser.flatMap(s => s.pts);
   if (!all.length) { box.innerHTML = `<div class="empty">${L(`No period in ${S.y0}–${S.y1} reaches ${S.minn} articles with these settings.`, `Aucune période de ${S.y0}–${S.y1} n’atteint ${S.minn} articles avec ces réglages.`)}</div>`; $("ttable").innerHTML = ""; return; }
   const W = Math.max(box.clientWidth - 8, 320), narrow = W < 560, H = narrow ? 300 : 360;
   const m = {l: 52, r: narrow ? 16 : 128, t: 26, b: 30};
   let t0 = Math.min(...all.map(p => p.t)), t1 = Math.max(...all.map(p => p.t));
   t0 = Math.floor(t0); t1 = Math.ceil(t1); if (t1 - t0 < 2) { t0 -= 1; t1 += 1; }
-  let lo = Math.min(0, ...all.map(p => p.R - 1.96 * p.se)), hi = Math.max(0, ...all.map(p => p.R + 1.96 * p.se));
+  let lo = Math.min(0, ...all.map(p => p.R - Z() * p.se)), hi = Math.max(0, ...all.map(p => p.R + Z() * p.se));
   const pad = (hi - lo) * 0.08 || 0.01; lo -= pad; hi += pad;
   const X = t => m.l + (t - t0) / (t1 - t0) * (W - m.l - m.r), Y = v => m.t + (hi - v) / (hi - lo) * (H - m.t - m.b);
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": L(`${DIMS[S.dim].label} over time`, `${DIMS[S.dim].label} dans le temps`)});
@@ -535,17 +548,18 @@ function drawTime(data) {
   ser.forEach((s, si) => {
     const col = css(SERIES[S.sel.indexOf(s.k)]);
     const runs = []; let cur = [];
-    s.pts.forEach((p, i) => { if (i && p.t - s.pts[i - 1].t > gap) { runs.push(cur); cur = []; } cur.push(p); }); if (cur.length) runs.push(cur);
+    const sgap = s.yearly ? 1.01 : gap;
+    s.pts.forEach((p, i) => { if (i && p.t - s.pts[i - 1].t > sgap) { runs.push(cur); cur = []; } cur.push(p); }); if (cur.length) runs.push(cur);
     for (const r of runs) {
       if (r.length > 1) {
         const band = r.map(p => `${X(p.t)},${Y(p.R + 1.96 * p.se)}`).join(" L") + " L" + r.slice().reverse().map(p => `${X(p.t)},${Y(p.R - 1.96 * p.se)}`).join(" L");
-        svg.append(el("path", {d: "M" + band + "Z", fill: col, "fill-opacity": 0.14, stroke: "none"}));
-        svg.append(el("path", {class: "line", d: "M" + r.map(p => `${X(p.t)},${Y(p.R)}`).join(" L"), fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round"}));
-      } else {
+        if (S.ci) svg.append(el("path", {d: "M" + band + "Z", fill: col, "fill-opacity": 0.14, stroke: "none"}));
+        svg.append(el("path", {class: "line", d: "M" + r.map(p => `${X(p.t)},${Y(p.R)}`).join(" L"), fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round", ...(s.yearly ? {"stroke-dasharray": "6 4"} : {})}));
+      } else if (S.ci) {
         const p = r[0];
         svg.append(el("line", {x1: X(p.t), x2: X(p.t), y1: Y(p.R + 1.96 * p.se), y2: Y(p.R - 1.96 * p.se), stroke: col, "stroke-width": 2, "stroke-opacity": 0.45}));
       }
-      if (S.res === "year" || r.length === 1) r.forEach(p => svg.append(el("circle", {cx: X(p.t), cy: Y(p.R), r: 3.5, fill: col, stroke: css("--panel"), "stroke-width": 2})));
+      if (S.res === "year" || s.yearly || r.length === 1) r.forEach(p => svg.append(el("circle", {cx: X(p.t), cy: Y(p.R), r: 3.5, fill: col, stroke: css("--panel"), "stroke-width": 2})));
     }
     const last = s.pts[s.pts.length - 1];
     if (!narrow && last) labels.push({y: Y(last.R), x: X(last.t), text: displayName(s.k), col});
@@ -567,10 +581,10 @@ function drawTime(data) {
     const t = t0 + (sx - m.l) / (W - m.l - m.r) * (t1 - t0);
     let best = times[0]; for (const u of times) if (Math.abs(u - t) < Math.abs(best - t)) best = u;
     cross.setAttribute("x1", X(best)); cross.setAttribute("x2", X(best)); cross.setAttribute("visibility", "visible");
-    const rows = ser.map(s => ({k: s.k, p: s.pts.find(p => p.t === best)})).filter(x => x.p);
-    const lab = rows[0]?.p.label ?? "";
+    const rows = ser.map(s => ({k: s.k, yearly: s.yearly, p: s.pts.find(p => s.yearly ? Math.floor(p.t) === Math.floor(best) : p.t === best)})).filter(x => x.p);
+    const lab = (rows.find(x => !x.yearly) || rows[0])?.p.label ?? "";
     tipAt(box, tip, X(best) * r.width / W, ev.clientY - box.getBoundingClientRect().top,
-      `<b>${lab}</b>` + rows.map(({k, p}) => `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(k)]})"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(p.R)} ± ${dec((1.96 * p.se).toFixed(3))}</span><span class="n">${nf.format(p.n)} articles</span></div>`).join(""));
+      `<b>${lab}</b>` + rows.map(({k, p}) => `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(k)]})"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(p.R)} ± ${dec((1.96 * p.se).toFixed(3))}</span><span class="n">${nf.format(p.n)} articles${rows.length && ser.find(s => s.k === k).yearly ? L(`, year ${p.label}`, `, année ${p.label}`) : ""}</span></div>`).join(""));
   };
   const brushing = attachBrush(svg, hit, m, W, H, t0, t1);
   hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
@@ -602,18 +616,16 @@ function attachBrush(svg, hit, m, W, H, t0, t1) {
 }
 // article counts per period (all outlets in the filter, no minimum)
 function counts(d) {
-  if (S.res === "year" || !d.m) {
-    const idx = yearCells(d), g = groupBy(idx, j => d.y.year[idx[j]]);
-    return [...g].map(([y, js]) => ({t: y + 0.5, label: String(y), n: js.reduce((a, j) => a + d.y.n_docs[idx[j]], 0)})).sort((a, b) => a.t - b.t);
+  if (S.res === "year" || !hasM(d)) {
+    // a person drawn by year under a finer step: show the average per quarter / month so the scale matches the others
+    const idx = yearCells(d), g = groupBy(idx, j => d.y.year[idx[j]]), per = S.res === "year" ? 1 : S.res === "quarter" ? 4 : 12;
+    return [...g].map(([y, js]) => ({t: y + 0.5, label: String(y), n: js.reduce((a, j) => a + d.y.n_docs[idx[j]], 0) / per})).sort((a, b) => a.t - b.t);
   }
-  const m = d.m, g = groupBy(m.month, i => { const [y, mo] = m.month[i].split("-").map(Number); if (!inPeriod(y)) return null;
-    return S.res === "month" ? m.month[i] : `${y}-Q${Math.floor((mo - 1) / 3) + 1}`; });
-  return [...g].map(([lab, idx]) => { const y = +lab.slice(0, 4), t = S.res === "month" ? y + (+lab.slice(5) - 0.5) / 12 : y + (+lab.slice(6) - 0.5) / 4;
-    return {t, label: lab, n: idx.reduce((a, i) => a + m.n_docs[i], 0)}; }).sort((a, b) => a.t - b.t);
+  return [...monthGroups(d.m)].map(([lab, idx]) => ({t: labT(lab), label: lab, n: idx.reduce((a, i) => a + d.m.n_docs[i], 0)})).sort((a, b) => a.t - b.t);
 }
 function drawMentions(data) {
   const box = $("men"); box.innerHTML = "";
-  const ser = data.map(({k, d}) => ({k, pts: counts(d)}));
+  const ser = data.map(({k, d}) => ({k, yearly: fallback(d), pts: counts(d)}));
   const all = ser.flatMap(s => s.pts);
   if (!all.length) { box.innerHTML = `<div class="empty">${L(`No articles in ${S.y0}–${S.y1} with these settings.`, `Aucun article en ${S.y0}–${S.y1} avec ces réglages.`)}</div>`; return; }
   const W = Math.max(box.clientWidth - 8, 320), narrow = W < 560, H = narrow ? 220 : 260;
@@ -637,9 +649,10 @@ function drawMentions(data) {
   ser.forEach(s => {
     const col = css(SERIES[S.sel.indexOf(s.k)]);
     // fill gaps with zero: a period with no cell means no article
-    const pts = []; s.pts.forEach((p, i) => { if (i && p.t - s.pts[i - 1].t > gap) { pts.push({t: s.pts[i - 1].t + gap * 0.99, n: 0, gapfill: 1}, {t: p.t - gap * 0.99, n: 0, gapfill: 1}); } pts.push(p); });
-    svg.append(el("path", {class: "line", d: "M" + pts.map(p => `${X(p.t)},${Y(p.n)}`).join(" L"), fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round"}));
-    if (S.res === "year") s.pts.forEach(p => svg.append(el("circle", {cx: X(p.t), cy: Y(p.n), r: 3.5, fill: col, stroke: css("--panel"), "stroke-width": 2})));
+    const sgap = s.yearly ? 1.01 : gap;
+    const pts = []; s.pts.forEach((p, i) => { if (i && p.t - s.pts[i - 1].t > sgap) { pts.push({t: s.pts[i - 1].t + sgap * 0.99, n: 0, gapfill: 1}, {t: p.t - sgap * 0.99, n: 0, gapfill: 1}); } pts.push(p); });
+    svg.append(el("path", {class: "line", d: "M" + pts.map(p => `${X(p.t)},${Y(p.n)}`).join(" L"), fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round", ...(s.yearly ? {"stroke-dasharray": "6 4"} : {})}));
+    if (S.res === "year" || s.yearly) s.pts.forEach(p => svg.append(el("circle", {cx: X(p.t), cy: Y(p.n), r: 3.5, fill: col, stroke: css("--panel"), "stroke-width": 2})));
     const last = s.pts[s.pts.length - 1];
     if (!narrow && last) labels.push({y: Y(last.n), text: displayName(s.k), col});
   });
@@ -650,13 +663,15 @@ function drawMentions(data) {
   const hit = el("rect", {x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent"}); svg.append(hit); box.append(svg);
   const brushing = attachBrush(svg, hit, m, W, H, t0, t1);
   const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.append(tip);
-  const times = [...new Set(all.map(p => p.t))].sort((a, b) => a - b), labOf = new Map(all.map(p => [p.t, p.label]));
+  const times = [...new Set(all.map(p => p.t))].sort((a, b) => a - b), labOf = new Map(ser.filter(s => !s.yearly).concat(ser.filter(s => s.yearly)).flatMap(s => s.pts).reverse().map(p => [p.t, p.label]));
   const move = ev => {
     const r = svg.getBoundingClientRect(), t = t0 + ((ev.clientX - r.left) * W / r.width - m.l) / (W - m.l - m.r) * (t1 - t0);
     let best = times[0]; for (const u of times) if (Math.abs(u - t) < Math.abs(best - t)) best = u;
     cross.setAttribute("x1", X(best)); cross.setAttribute("x2", X(best)); cross.setAttribute("visibility", "visible");
     tipAt(box, tip, X(best) * r.width / W, ev.clientY - box.getBoundingClientRect().top, `<b>${labOf.get(best)}</b>` +
-      ser.map(s => { const p = s.pts.find(p => p.t === best); return `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(s.k)]})"></i><span>${esc(displayName(s.k))}</span><span class="v">${nf.format(p ? p.n : 0)}</span></div>`; }).join(""));
+      ser.map(s => { const p = s.pts.find(p => s.yearly ? Math.floor(p.t) === Math.floor(best) : p.t === best);
+        const v = s.yearly && p ? "≈ " + nf.format(Math.round(p.n)) : nf.format(p ? p.n : 0);
+        return `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(s.k)]})"></i><span>${esc(displayName(s.k))}</span><span class="v">${v}</span>${s.yearly && p ? `<span class="n">${L(`${p.label} average`, `moyenne ${p.label}`)}</span>` : ""}</div>`; }).join(""));
   };
   hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
   hit.addEventListener("pointerleave", () => { if (!brushing()) { tip.hidden = true; cross.setAttribute("visibility", "hidden"); } });
@@ -679,7 +694,7 @@ function drawOutlets(data) {
   const W = Math.max(box.clientWidth - 8, 320), narrow = W < 560, rowH = Math.max(26, per.length * 6 + 10), m = {l: narrow ? 118 : 170, r: narrow ? 56 : 84, t: 30, b: 24};
   const H = m.t + m.b + os.length * rowH;
   const vals = per.flatMap(p => [...p.out.values()]);
-  let lo = Math.min(0, ...vals.map(r => r.R - 1.96 * r.se)), hi = Math.max(0, ...vals.map(r => r.R + 1.96 * r.se));
+  let lo = Math.min(0, ...vals.map(r => r.R - Z() * r.se)), hi = Math.max(0, ...vals.map(r => r.R + Z() * r.se));
   const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${DIMS[S.dim].label} by newspaper`});
@@ -701,7 +716,7 @@ function drawOutlets(data) {
     per.forEach((p, pi) => {
       const r = p.out.get(o); if (!r) return;
       const col = css(SERIES[S.sel.indexOf(p.k)]), yy = y + off[pi];
-      svg.append(el("line", {x1: X(r.R - 1.96 * r.se), x2: X(r.R + 1.96 * r.se), y1: yy, y2: yy, stroke: col, "stroke-width": 2, "stroke-opacity": 0.5, "stroke-linecap": "round"}));
+      if (S.ci) svg.append(el("line", {x1: X(r.R - 1.96 * r.se), x2: X(r.R + 1.96 * r.se), y1: yy, y2: yy, stroke: col, "stroke-width": 2, "stroke-opacity": 0.5, "stroke-linecap": "round"}));
       svg.append(el("circle", {cx: X(r.R), cy: yy, r: 4.5, fill: col, stroke: css("--panel"), "stroke-width": 2}));
     });
     const hit = el("rect", {x: 0, y: y - rowH / 2, width: W, height: rowH, fill: "transparent"});
@@ -717,7 +732,7 @@ function drawOutlets(data) {
   });
   box.append(svg, tip);
   const how = S.osort === "n" ? L("by articles", "par nombre d’articles") : S.osort === "name" ? L("by name", "par nom") : L(`by ${displayName(first.k)}’s score`, `selon le score de ${displayName(first.k)}`);
-  $("out-sub").textContent = L(`${S.y0}–${S.y1} · ${DIMS[S.dim].label} with 95% intervals, ordered ${how}. A newspaper with fewer than ${S.minn} articles on a person is left out for that person.`, `${S.y0}–${S.y1} · ${DIMS[S.dim].label} avec intervalles à 95 %, trié ${how}. Un journal qui compte moins de ${S.minn} articles sur une personne est omis pour elle.`);
+  $("out-sub").textContent = L(`${S.y0}–${S.y1} · ${DIMS[S.dim].label}${S.ci ? " with 95% intervals" : ""}, ordered ${how}. A newspaper with fewer than ${S.minn} articles on a person is left out for that person.`, `${S.y0}–${S.y1} · ${DIMS[S.dim].label}${S.ci ? " avec intervalles à 95 %" : ""}, trié ${how}. Un journal qui compte moins de ${S.minn} articles sur une personne est omis pour elle.`);
 }
 
 // one person: newspapers in rows, years in columns, colour = score
@@ -790,7 +805,7 @@ function drawSummary(data) {
   const panels = [["n", {label: "Articles"}], ...Object.entries(DIMS)];
   panels.forEach(([dm, p], j) => {
     const x0 = left + j * (pw + gp), isN = dm === "n";
-    const v = r => isN ? r.n : r[dm]?.R, ci = r => isN ? 0 : 1.96 * (r[dm]?.se || 0);
+    const v = r => isN ? r.n : r[dm]?.R, ci = r => isN ? 0 : Z() * (r[dm]?.se || 0);
     let lo = isN ? 0 : Math.min(0, ...rows.map(r => v(r) - ci(r))), hi = Math.max(0, ...rows.map(r => v(r) + ci(r)));
     if (!isN) { const pad = (hi - lo) * 0.08 || 0.01; lo -= pad; hi += pad; } else hi *= 1.05;
     const X = x => x0 + (x - lo) / (hi - lo || 1) * pw;
@@ -801,7 +816,7 @@ function drawSummary(data) {
       svg.append(el("text", {x: X(t), y: H - bot + 15, "text-anchor": "middle"}, isN ? cf.format(t) : z ? "0" : (t > 0 ? "+" : "−") + dec(+Math.abs(t).toFixed(3)))); }
     rows.forEach((r, k) => { const val = v(r); if (val == null) return; const y = top + k * rowH, a = X(Math.min(0, val)), b = X(Math.max(0, val));
       svg.append(el("rect", {x: a, y: y + 7, width: Math.max(b - a, 1), height: rowH - 14, rx: 2, fill: r.col, "fill-opacity": 0.8}));
-      if (!isN) { const c = ci(r), yy = y + rowH / 2;
+      if (!isN && S.ci) { const c = ci(r), yy = y + rowH / 2;
         svg.append(el("line", {x1: X(val - c), x2: X(val + c), y1: yy, y2: yy, stroke: fg2, "stroke-width": 1.25}));
         for (const e of [val - c, val + c]) svg.append(el("line", {x1: X(e), x2: X(e), y1: yy - 4, y2: yy + 4, stroke: fg2, "stroke-width": 1.25})); }
       else svg.append(el("text", {x: b + 4, y: y + rowH / 2 + 4}, cf.format(val))); });
@@ -855,10 +870,10 @@ async function drawRanking() {
   if (!N) { box.innerHTML = `<div class="empty">${L(`Nobody reaches ${nf.format(RK.min)} articles in ${S.y0}–${S.y1} with these newspapers.`, `Personne n’atteint ${nf.format(RK.min)} articles en ${S.y0}–${S.y1} avec ces journaux.`)}</div>`; $("rk-sub").textContent = ""; return; }
   $("rk-sub").textContent = L(`${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "person is" : "people are"} named in at least ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `All of them, ranked by ${what}; the ${e} at each end are marked.` : `Only the two ends are shown: the ${e} highest and the ${e} lowest by ${what}; the ${nf.format(mid)} in between are hidden.`)
-      : `All of them, ranked by ${what}.`) + ` Dots: averages with 95% intervals; each panel has its own scale. Click a name to follow that person over time.`,
+      : `All of them, ranked by ${what}.`) + ` Dots: averages${S.ci ? " with 95% intervals" : ""}; each panel has its own scale. Click a name to follow that person over time.`,
     `${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "personne est citée" : "personnes sont citées"} dans au moins ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `Toutes, classées par ${what} ; les ${e} de chaque bout sont signalées.` : `Seuls les deux bouts sont affichés : les ${e} plus hautes et les ${e} plus basses en ${what} ; les ${nf.format(mid)} du milieu sont masquées.`)
-      : `Toutes, classées par ${what}.`) + ` Points : moyennes avec intervalles à 95 % ; chaque panneau a sa propre échelle. Cliquez sur un nom pour suivre la personne dans le temps.`);
+      : `Toutes, classées par ${what}.`) + ` Points : moyennes${S.ci ? " avec intervalles à 95 %" : ""} ; chaque panneau a sa propre échelle. Cliquez sur un nom pour suivre la personne dans le temps.`);
   // layout: band labels, rows, and the gap between the two ends
   const items = [];
   if (split) {
@@ -893,7 +908,8 @@ async function drawRanking() {
   }
   Object.entries(DIMS).forEach(([dm, p], j) => {
     const x0 = left + j * (pw + gp), on = dm === RK.sort;
-    let lo = Math.min(0, ...rows.map(({r}) => r[dm] - r[dm + "_ci"])), hi = Math.max(0, ...rows.map(({r}) => r[dm] + r[dm + "_ci"]));
+    const cz = S.ci ? 1 : 0;
+    let lo = Math.min(0, ...rows.map(({r}) => r[dm] - cz * r[dm + "_ci"])), hi = Math.max(0, ...rows.map(({r}) => r[dm] + cz * r[dm + "_ci"]));
     const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
     const X = v => x0 + (v - lo) / (hi - lo) * pw;
     svg.append(el("text", {class: "ttl", x: x0, y: 18, style: on ? "" : "font-weight:500;fill:var(--fg2)"}, p.label + (on ? L("  · ranked by this", "  · critère du classement") : "")));
@@ -903,7 +919,7 @@ async function drawRanking() {
       for (const seg of segments(items, top, AXY)) svg.append(el("line", {x1: X(v), x2: X(v), y1: seg[0], y2: seg[1], stroke: z ? zero : grid, "stroke-width": z ? 1.25 : 1}));
       svg.append(el("text", {x: X(v), y: AXY + 15, "text-anchor": "middle"}, z ? "0" : (v > 0 ? "+" : "−") + dec(+Math.abs(v).toFixed(3)))); }
     rows.forEach(({r, y: ry}) => { const y = ry + rowH / 2, si = S.sel.indexOf(r.key), col = si >= 0 ? css(SERIES[si]) : on ? fg : base;
-      svg.append(el("line", {x1: X(r[dm] - r[dm + "_ci"]), x2: X(r[dm] + r[dm + "_ci"]), y1: y, y2: y, stroke: col, "stroke-width": 2, "stroke-opacity": 0.45, "stroke-linecap": "round"}));
+      if (S.ci) svg.append(el("line", {x1: X(r[dm] - r[dm + "_ci"]), x2: X(r[dm] + r[dm + "_ci"]), y1: y, y2: y, stroke: col, "stroke-width": 2, "stroke-opacity": 0.45, "stroke-linecap": "round"}));
       svg.append(el("circle", {cx: X(r[dm]), cy: y, r: si >= 0 ? 5 : 4, fill: col, stroke: panel, "stroke-width": 2})); });
   });
   const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
@@ -952,17 +968,25 @@ async function render() {
     drawOutlets(data); drawHeat(data); drawSummary(data);
     return;
   }
-  const monthlyOk = data.length && data.every(x => x.d.m) && !S.oset;
-  document.querySelectorAll("#res button").forEach(b => { if (b.dataset.v !== "year") b.disabled = !monthlyOk; });
-  if (!monthlyOk && S.res !== "year") setSeg("res", S.res = "year");
-  const hint = $("reshint");
-  if (data.length && !monthlyOk) {
+  // Quarter / month are available as soon as one selected person has usable monthly data;
+  // the others are drawn by year (dashed) instead of locking everyone to yearly.
+  const anyM = data.some(x => hasM(x.d));
+  document.querySelectorAll("#res button").forEach(b => { if (b.dataset.v !== "year") b.disabled = !anyM; });
+  if (!anyM && S.res !== "year") setSeg("res", S.res = "year");
+  const hint = $("reshint"), fb = data.filter(x => fallback(x.d)).map(x => esc(displayName(x.k)));
+  const filtered = S.oset && data.some(x => x.d.m && !x.d.m.o);
+  if (data.length && !anyM) {
     hint.hidden = false;
-    hint.innerHTML = S.oset ? L("Quarter and month steps cover all newspapers together.", "Les pas trimestriel et mensuel portent sur tous les journaux ensemble.") + `<button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>`
-      : L("Quarter and month steps need every selected person to appear in at least 1,000 articles.", "Les pas trimestriel et mensuel demandent que chaque personne sélectionnée figure dans au moins 1 000 articles.");
+    hint.innerHTML = filtered ? L("Quarter and month steps cover all newspapers together.", "Les pas trimestriel et mensuel portent sur tous les journaux ensemble.") + ` <button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>`
+      : L("Quarter and month steps need at least one selected person in 1,000 articles or more.", "Les pas trimestriel et mensuel demandent qu’au moins une personne sélectionnée figure dans 1 000 articles ou plus.");
+  } else if (fb.length) {
+    hint.hidden = false;
+    hint.innerHTML = L(`${fb.join(", ")}: drawn by year (dashed line), with fewer than 1,000 articles there is no ${S.res === "quarter" ? "quarterly" : "monthly"} detail.`,
+      `${fb.join(", ")} : tracé par année (pointillés), moins de 1 000 articles ne donnent pas de détail ${S.res === "quarter" ? "trimestriel" : "mensuel"}.`)
+      + (filtered ? ` <button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>` : "");
   } else hint.hidden = true;
   if (!data.length) { $("timechart").innerHTML = `<div class="empty">${L("Add a person above to follow them over time.", "Ajoutez une personne ci-dessus pour la suivre dans le temps.")}</div>`; $("men").innerHTML = ""; $("men-sub").textContent = ""; $("ttable").innerHTML = ""; $("time-sub").textContent = ""; return; }
-  $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}, ${S.res === "year" ? "yearly" : S.res === "quarter" ? "quarterly" : "monthly"} means with 95% intervals${papers}. Drag across the chart to zoom, double-click to reset.`, `${per} · ${DIMS[S.dim].label}, moyennes ${S.res === "year" ? "annuelles" : S.res === "quarter" ? "trimestrielles" : "mensuelles"} avec intervalles à 95 %${papers}. Faites glisser sur le graphique pour zoomer, double-cliquez pour revenir.`);
+  $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}, ${S.res === "year" ? "yearly" : S.res === "quarter" ? "quarterly" : "monthly"} means${S.ci ? " with 95% intervals" : ""}${papers}. Drag across the chart to zoom, double-click to reset.`, `${per} · ${DIMS[S.dim].label}, moyennes ${S.res === "year" ? "annuelles" : S.res === "quarter" ? "trimestrielles" : "mensuelles"}${S.ci ? " avec intervalles à 95 %" : ""}${papers}. Faites glisser sur le graphique pour zoomer, double-cliquez pour revenir.`);
   $("men-sub").textContent = L(`${per} · Articles mentioning the person, ${S.res === "year" ? "per year" : S.res === "quarter" ? "per quarter" : "per month"}${papers}. Raw counts: the corpus grows over time, so contrasts between people are more meaningful than contrasts between years.`, `${per} · Articles mentionnant la personne, ${S.res === "year" ? "par an" : S.res === "quarter" ? "par trimestre" : "par mois"}${papers}. Comptes bruts : le volume du corpus augmente au cours du temps, les contrastes entre personnes sont donc plus pertinents que les contrastes entre années.`);
   drawTime(data); drawMentions(data);
 }
@@ -1027,6 +1051,9 @@ function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach(b =>
 $("dim").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.dim = b.dataset.v; setSeg("dim", S.dim); render(); });
 $("res").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; S.res = b.dataset.v; setSeg("res", S.res); render(); });
 $("minn").addEventListener("change", e => { S.minn = +e.target.value; render(); });
+setSeg("ci", S.ci ? "on" : "off");
+$("ci").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.ci = b.dataset.v === "on"; setSeg("ci", b.dataset.v);
+  try { localStorage.setItem("pp-ci", b.dataset.v); } catch (er) {} render(); });
 function syncYr() {
   const a = +$("y0").value, b = +$("y1").value, span = S.Y1 - S.Y0 || 1, p0 = (a - S.Y0) / span * 100, p1 = (S.Y1 - b) / span * 100;
   $("yfill").style.left = `calc(${p0}% + ${8 - p0 * 0.16}px)`; $("yfill").style.right = `calc(${p1}% + ${8 - p1 * 0.16}px)`;
@@ -1106,7 +1133,7 @@ const FR = {
   "Show the numbers as a table": "Afficher les chiffres en tableau", "How often mentioned": "Fréquence des mentions",
   "Our main tool: BERT": "L’outil principal : BERT", "Computing the scores": "Le calcul des scores", "How the models are trained": "Méthode d’entraînement des modèles", "Code and models": "Code et modèles", "Loading the name index…": "Chargement de l’index des noms…",
   "Views": "Vues", "Light theme": "Thème clair", "Dark theme": "Thème sombre", "Filters": "Filtres", "From year": "Année de début", "To year": "Année de fin",
-  "Minimum articles per point": "Minimum d’articles par point", "Rank people by": "Classer les personnes par",
+  "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "Hide": "Masquer", "Rank people by": "Classer les personnes par",
   "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée"};
 const STATIC = [];
 function collectStatic() {
