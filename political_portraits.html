@@ -350,7 +350,7 @@ details.cb .cbtext { white-space: normal; }
       « Jean-Luc Mélenchon » when there is exactly one; otherwise the person that family name stands for that year, when one person holds at least 90% of the
       articles naming someone « … Mélenchon ». Le Pen, place names, and family names that are also first names (Philippe, Bertrand) are never resolved that way.
       A name groups every spelling that differs only by case, accents or hyphens, and homonyms are merged. Only names found in at least 30 articles are listed, with monthly detail for names in 1,000 articles or more.</p>
-    <p>The mix of newspapers changes over the years (only Le Monde before 2008). The page opens on ten national titles; keep the same set when comparing years.
+    <p>The mix of newspapers changes over the years (only Le Monde before 2008). The page opens on 2008–2026 and ten national titles; keep the same set when comparing years, and use « Full period » to go back to 1944.
       Quarterly and monthly steps are computed over all newspapers together.</p>
     </div>
     <div class="nl" data-l="fr" lang="fr">
@@ -366,7 +366,7 @@ details.cb .cbtext { white-space: normal; }
       « Jean-Luc Mélenchon » de l’article quand il y en a exactement un ; sinon, la personne que ce nom de famille désigne cette année-là, si une seule personne réunit au moins 90 % des
       articles nommant quelqu’un « … Mélenchon ». Le Pen, les noms de lieux et les noms de famille qui sont aussi des prénoms (Philippe, Bertrand) ne sont jamais résolus ainsi.
       Un nom regroupe toutes les graphies qui ne diffèrent que par la casse, les accents ou les traits d’union, et les homonymes sont fusionnés. Seuls les noms présents dans au moins 30 articles sont listés, avec un détail mensuel pour ceux présents dans 1 000 articles ou plus.</p>
-    <p>Le mélange de journaux change au fil des ans (Le Monde seul avant 2008). La page s’ouvre sur dix titres nationaux ; gardez le même ensemble pour comparer des années.
+    <p>Le mélange de journaux change au fil des ans (Le Monde seul avant 2008). La page s’ouvre sur 2008–2026 et dix titres nationaux ; gardez le même ensemble pour comparer des années, et utilisez « Toute la période » pour remonter à 1944.
       Les pas trimestriel et mensuel portent sur l’ensemble des journaux.</p>
     </div>
     <p class="status" id="status">Loading the name index…</p>
@@ -448,7 +448,7 @@ const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).
 const fmt = x => (x >= 0 ? "+" : "−") + dec(Math.abs(x).toFixed(3));
 let nf = new Intl.NumberFormat(LOC());
 
-const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 1944, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score"};
+const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score"};
 
 const key = s => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -1131,7 +1131,7 @@ $("lang").addEventListener("click", e => { const b = e.target.closest("button");
 collectStatic(); applyLang();
 function start(ix) {
   S.index = ix; S.outlets = ix.outlets; ix.names.forEach((e, i) => S.byKey.set(e[0], i));
-  if (ix.years) { [S.Y0, S.Y1] = ix.years; S.y0 = S.Y0; S.y1 = S.Y1; }
+  if (ix.years) { [S.Y0, S.Y1] = ix.years; S.y0 = Math.min(Math.max(2008, S.Y0), S.Y1); S.y1 = S.Y1; }   // opens on 2008- (web press); « Full period » gives 1944-
   for (const id of ["y0", "y1"]) { $(id).min = S.Y0; $(id).max = S.Y1; }
   $("y0").value = S.y0; $("y1").value = S.y1; syncYr();
   outletUI();
