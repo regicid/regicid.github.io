@@ -208,6 +208,21 @@ details.cb .cbtext { white-space: pre-wrap; font: 15px/1.45 var(--f-body); backg
 .cb-gap { height: 10px; }
 .cb-l { margin-bottom: 2px; }
 details.cb .cbtext { white-space: normal; }
+/* presidential tab */
+.pc-ctl { display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; }
+.pc-fig { overflow-x: auto; }
+.chart .cv { font-size: 12.5px; fill: var(--fg); }
+.chart .cv.sig { font-weight: 700; }
+.chart .ch { font-family: var(--f-body); font-size: 14px; fill: var(--fg); }
+.chart .pcl { font-family: var(--f-body); font-size: 13.5px; fill: var(--fg); }
+.chart .pcv { font-family: var(--f-body); font-size: 14px; font-style: italic; font-weight: 600; fill: var(--fg2); }
+.qmsg { flex-basis: 100%; }
+/* while new data loads: the old chart fades and a label says so */
+.chart.busy { min-height: 72px; }
+.chart.busy > * { opacity: 0.3; transition: opacity 0.2s; pointer-events: none; }
+.chart.busy::after { content: attr(data-busy); position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 14px;
+  font: 600 14px var(--f-body); box-shadow: 0 4px 14px rgb(0 0 0 / 0.08); white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -222,6 +237,13 @@ details.cb .cbtext { white-space: normal; }
   <div class="controls" role="group" aria-label="Filters">
     <div class="corp">
       <div class="corphead">
+        <span class="flabel" id="s-label">Sections</span>
+        <span class="ocount" id="scount"></span>
+      </div>
+      <div class="ochips" id="schips" role="group" aria-labelledby="s-label"></div>
+    </div>
+    <div class="corp">
+      <div class="corphead">
         <span class="flabel" id="o-label">Newspapers</span>
         <button type="button" class="tlink" id="o-all">All</button>
         <button type="button" class="tlink" id="o-none">None</button>
@@ -230,7 +252,7 @@ details.cb .cbtext { white-space: normal; }
       </div>
       <div class="ochips" id="ochips" role="group" aria-labelledby="o-label"></div>
     </div>
-    <div class="row">
+    <div class="row" data-tabs="top corpora time">
       <div class="search field">
         <span id="q-label">People (up to six)</span>
         <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. Mélenchon, Bardella, Darmanin…"
@@ -238,9 +260,10 @@ details.cb .cbtext { white-space: normal; }
         <ul id="suggest" class="suggest" role="listbox" hidden></ul>
       </div>
       <div class="chips" id="chips" aria-live="polite"></div>
+      <span class="hint qmsg" id="qmsg" aria-live="polite" hidden></span>
     </div>
     <div class="row">
-      <div class="field"><span>Period</span>
+      <div class="field" data-tabs="top corpora time"><span>Period</span>
         <div class="yrwrap"><div class="yr"><div class="yr-track"></div><div class="yr-fill" id="yfill"></div><input type="range" id="y0" step="1" aria-label="From year"><input type="range" id="y1" step="1" aria-label="To year"></div><span class="ylab" id="ylab"></span><button type="button" class="linkbtn" id="yreset" hidden>Full period</button></div></div>
       <div class="field"><span>Score</span>
         <div class="seg" id="dim" role="group" aria-label="Score">
@@ -284,6 +307,7 @@ details.cb .cbtext { white-space: normal; }
     <button type="button" role="tab" id="tab-top" data-tab="top" aria-controls="p-top" aria-selected="true"><span>Top / Flop</span></button>
     <button type="button" role="tab" id="tab-corpora" data-tab="corpora" aria-controls="p-corpora" aria-selected="false" tabindex="-1"><span>Across media</span></button>
     <button type="button" role="tab" id="tab-time" data-tab="time" aria-controls="p-time" aria-selected="false" tabindex="-1"><span>Over time</span></button>
+    <button type="button" role="tab" id="tab-pres" data-tab="pres" aria-controls="p-pres" aria-selected="false" tabindex="-1"><span>2027 presidential</span></button>
     <button type="button" role="tab" id="tab-method" data-tab="method" aria-controls="p-method" aria-selected="false" tabindex="-1"><span>Methodology</span></button>
   </nav>
 
@@ -356,6 +380,46 @@ details.cb .cbtext { white-space: normal; }
     </section>
   </div>
 
+  <!-- 2027 presidential election -->
+  <div class="panel" id="p-pres" role="tabpanel" aria-labelledby="tab-pres" hidden>
+    <div class="pc-ctl" role="group" aria-label="Candidates">
+      <div class="corp">
+        <div class="corphead">
+          <span class="flabel" id="pc-label">Candidates</span>
+          <button type="button" class="tlink" id="pc-all">All</button>
+          <span class="ocount" id="pc-count"></span>
+        </div>
+        <div class="ochips" id="pc-chips" role="group" aria-labelledby="pc-label"></div>
+      </div>
+      <div class="row">
+        <div class="field"><span>Campaign period</span>
+          <div class="yrwrap"><div class="seg" id="pc-per" role="group" aria-label="Campaign period">
+            <button type="button" data-v="3" aria-pressed="false">3 months</button><button type="button" data-v="6" aria-pressed="true">6 months</button><button type="button" data-v="12" aria-pressed="false">12 months</button><button type="button" data-v="24" aria-pressed="false">24 months</button>
+          </div><span class="ylab" id="pc-range"></span></div></div>
+        <button type="button" class="linkbtn" id="pc-follow" style="align-self:end;margin-bottom:8px">Follow these candidates over time</button>
+      </div>
+    </div>
+    <section class="card" aria-labelledby="t-pc-over">
+      <div class="cardhead"><h2 id="t-pc-over">Overall score of each candidate</h2></div>
+      <div class="sub" id="pc-over-sub"></div>
+      <div class="chart" id="pc-over"></div>
+    </section>
+    <section class="card" aria-labelledby="t-pc-heat">
+      <div class="cardhead"><h2 id="t-pc-heat">Contrasts between newspapers</h2>
+        <div class="field"><span>Show</span><div class="seg" id="pc-mode" role="group" aria-label="Contrast shown">
+          <button type="button" data-v="gap" aria-pressed="true">Gap with other papers</button><button type="button" data-v="net" aria-pressed="false">Net of paper and candidate</button><button type="button" data-v="raw" aria-pressed="false">Score</button></div></div></div>
+      <div class="sub" id="pc-heat-sub"></div>
+      <div class="chart pc-fig" id="pc-heat"></div>
+    </section>
+    <section class="card" aria-labelledby="t-pc-pca">
+      <div class="cardhead"><h2 id="t-pc-pca">Map of the newspapers (PCA)</h2>
+        <div class="field"><span>Each paper’s overall tone</span><div class="seg" id="pc-tone" role="group" aria-label="Each paper’s overall tone">
+          <button type="button" data-v="keep" aria-pressed="false">Kept</button><button type="button" data-v="drop" aria-pressed="true">Removed</button></div></div></div>
+      <div class="sub" id="pc-pca-sub"></div>
+      <div class="chart pc-fig" id="pc-pca"></div>
+    </section>
+  </div>
+
   <!-- Methodology -->
   <div class="panel" id="p-method" role="tabpanel" aria-labelledby="tab-method" hidden>
     <section class="card mcard" aria-labelledby="t-bert">
@@ -380,9 +444,8 @@ details.cb .cbtext { white-space: normal; }
     <section class="notes" aria-labelledby="t-notes">
     <h2 id="t-notes">Computing the scores</h2>
     <div class="nl" data-l="en">
-    <p>Le Monde, 1944 to November 2026 (3.2 million articles, every section), shown as two newspapers: « Le Monde · politique » (its 389,000 politics articles)
-      and « Le Monde · other sections »; and the politics sections of 32 French news sites, 2008 to November 2026
-      (1.48 million articles). The section comes from <code>n-gramsci/rubriques-presse</code>, and from the same classifier after June 2026 and for the 0.5% of Le Monde articles it lacks. People are found by
+    <p>Le Monde, 1944 to November 2026 (3.2 million articles, every section, 389,000 of them in politics); and 32 French news sites, 2008 to November 2026
+      (1.48 million politics articles; more sections are being added). The « Sections » filter sets which sections count, and the newspapers offered are those that have them; the page opens on politics. The section comes from <code>n-gramsci/rubriques-presse</code>, and from the same classifier after June 2026 and for the 0.5% of Le Monde articles it lacks. People are found by
       named-entity recognition and Qwen coreference. Each passage centred on a mention is scored by <code>portrayal-camembert-large</code> v2 (seed 0), trained on codebook v4.</p>
     <p><b>Valence</b> is P(positive) − P(negative) judgement of the person. <b>Extremism</b> is P(framed as radical or extreme) − P(framed as moderate).
       <b>Momentum</b> is P(rising in the race) − P(declining). All three run from −1 to +1. Most passages carry no judgement, so averages sit close to 0.</p>
@@ -391,14 +454,12 @@ details.cb .cbtext { white-space: normal; }
     <p>A person is named by the full name in their coreference chain. A chain that only says « Mélenchon » or « M. Mélenchon » takes the article’s own
       « Jean-Luc Mélenchon » when there is exactly one; otherwise the person that family name stands for that year, when one person holds at least 90% of the
       articles naming someone « … Mélenchon ». Le Pen, place names, and family names that are also first names (Philippe, Bertrand) are never resolved that way.
-      A name groups every spelling that differs only by case, accents or hyphens, and homonyms are merged. Only names found in at least 30 articles are listed, with monthly detail for names in 1,000 articles or more.</p>
-    <p>The mix of newspapers changes over the years (only Le Monde before 2008). The page opens on 2008–2026 and ten national titles; keep the same set when comparing years, and use « Full period » to go back to 1944.
-      Quarterly and monthly steps are computed over all newspapers together.</p>
+      A name groups every spelling that differs only by case, accents or hyphens, and homonyms are merged. The search suggests names found in at least 30 articles; any other name can be looked up directly. Scores are read live from the Ngramsci API, month by month and newspaper by newspaper.</p>
+    <p>The mix of newspapers changes over the years (only Le Monde before 2008). The page opens on 2008–2026 and ten national titles; keep the same set when comparing years, and use « Full period » to go back to 1944.</p>
     </div>
     <div class="nl" data-l="fr" lang="fr">
-    <p>Le Monde, de 1944 à novembre 2026 (3,2 millions d’articles, toutes rubriques), présenté comme deux journaux : « Le Monde · politique » (ses 389 000 articles politiques)
-      et « Le Monde · autres rubriques » ; et les rubriques politiques de 32 sites d’information français, de 2008 à novembre 2026
-      (1,48 million d’articles). La rubrique vient de <code>n-gramsci/rubriques-presse</code>, puis du même classifieur après juin 2026 et pour les 0,5 % d’articles du Monde qui y manquent. Les personnes sont repérées par
+    <p>Le Monde, de 1944 à novembre 2026 (3,2 millions d’articles, toutes rubriques, dont 389 000 en politique) ; et 32 sites d’information français, de 2008 à novembre 2026
+      (1,48 million d’articles politiques ; d’autres rubriques sont en cours d’ajout). Le filtre « Rubriques » choisit les rubriques prises en compte, et les journaux proposés sont ceux qui les ont ; la page s’ouvre sur la politique. La rubrique vient de <code>n-gramsci/rubriques-presse</code>, puis du même classifieur après juin 2026 et pour les 0,5 % d’articles du Monde qui y manquent. Les personnes sont repérées par
       reconnaissance d’entités nommées et coréférence Qwen. Chaque passage centré sur une mention est noté par <code>portrayal-camembert-large</code> v2 (graine 0), entraîné sur le codebook v4.</p>
     <p>La <b>valence</b> vaut P(jugement positif) − P(jugement négatif) sur la personne. L’<b>extrémisme</b> vaut P(présentée comme radicale ou extrême) − P(présentée comme modérée).
       La <b>dynamique</b> vaut P(en progression dans la course) − P(en recul). Les trois vont de −1 à +1. La plupart des passages ne portent aucun jugement : les moyennes restent proches de 0.</p>
@@ -407,9 +468,8 @@ details.cb .cbtext { white-space: normal; }
     <p>Une personne est désignée par le nom complet de sa chaîne de coréférence. Une chaîne qui ne dit que « Mélenchon » ou « M. Mélenchon » reprend le
       « Jean-Luc Mélenchon » de l’article quand il y en a exactement un ; sinon, la personne que ce nom de famille désigne cette année-là, si une seule personne réunit au moins 90 % des
       articles nommant quelqu’un « … Mélenchon ». Le Pen, les noms de lieux et les noms de famille qui sont aussi des prénoms (Philippe, Bertrand) ne sont jamais résolus ainsi.
-      Un nom regroupe toutes les graphies qui ne diffèrent que par la casse, les accents ou les traits d’union, et les homonymes sont fusionnés. Seuls les noms présents dans au moins 30 articles sont listés, avec un détail mensuel pour ceux présents dans 1 000 articles ou plus.</p>
-    <p>Le mélange de journaux change au fil des ans (Le Monde seul avant 2008). La page s’ouvre sur 2008–2026 et dix titres nationaux ; gardez le même ensemble pour comparer des années, et utilisez « Toute la période » pour remonter à 1944.
-      Les pas trimestriel et mensuel portent sur l’ensemble des journaux.</p>
+      Un nom regroupe toutes les graphies qui ne diffèrent que par la casse, les accents ou les traits d’union, et les homonymes sont fusionnés. La recherche propose les noms présents dans au moins 30 articles ; tout autre nom peut être cherché directement. Les scores sont lus en direct dans l’API Ngramsci, mois par mois et journal par journal.</p>
+    <p>Le mélange de journaux change au fil des ans (Le Monde seul avant 2008). La page s’ouvre sur 2008–2026 et dix titres nationaux ; gardez le même ensemble pour comparer des années, et utilisez « Toute la période » pour remonter à 1944.</p>
     </div>
     <p class="status" id="status">Loading the name index…</p>
   </section>
@@ -453,12 +513,12 @@ details.cb .cbtext { white-space: normal; }
     </section>
   </div>
 
-  <p class="foot" data-tabs="top corpora time"><span data-l="en">Curious where this comes from? See <a href="#method">Methodology</a>.</span><span data-l="fr" lang="fr">Curieux de savoir d’où ça sort ? Voir <a href="#method">Méthodologie</a>.</span></p>
+  <p class="foot" data-tabs="top corpora time pres"><span data-l="en">Curious where this comes from? See <a href="#method">Methodology</a>.</span><span data-l="fr" lang="fr">Curieux de savoir d’où ça sort ? Voir <a href="#method">Méthodologie</a>.</span></p>
 </div>
 
 <script>
 (() => {
-const OUTLET_NAMES = {"lemonde":"Le Monde","lemonde_politique":"Le Monde · politique","lemonde_autres":"Le Monde · other sections","20minutes":"20 Minutes","atlantico":"Atlantico","bfmtv":"BFMTV","blast":"Blast","challenges":"Challenges","cnews":"CNews",
+const OUTLET_NAMES = {"lemonde":"Le Monde","20minutes":"20 Minutes","atlantico":"Atlantico","bfmtv":"BFMTV","blast":"Blast","challenges":"Challenges","cnews":"CNews",
   "francesoir":"FranceSoir","l_opinion":"L’Opinion","la_croix":"La Croix","la_depeche":"La Dépêche","laprovence":"La Provence","latribune":"La Tribune",
   "le_capital":"Capital","le_courrier_de_l_ouest":"Le Courrier de l’Ouest","le_figaro":"Le Figaro","le_journal_du_dimanche":"Le JDD",
   "le_maine_libre":"Le Maine Libre","le_nouvel_observateur":"L'Obs","le_telegramme":"Le Télégramme","leparisien":"Le Parisien","les_echos":"Les Échos",
@@ -479,18 +539,148 @@ const dec = x => LANG === "fr" ? String(x).replace(".", ",") : String(x);
 const plural = (n, en1, enN, fr1, frN) => n === 1 ? L(en1, fr1) : L(enN, frN);
 const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6"], MAXP = SERIES.length;
 const DEFAULT = ["emmanuel macron", "marine le pen", "jean luc melenchon"];
-const MAIN = ["lemonde_politique", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "marianne", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
-const TABS = ["top", "corpora", "time", "method"];
-const LS_OUT = "pp-newspapers-v2";   // v2: Le Monde split into politique / other sections
-// Where the data lives, relative to this page: the site/ folder made by build_site.py (index.json, ranking.json, data/b_*.json).
+const MAIN = ["lemonde", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "marianne", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
+const TABS = ["top", "corpora", "time", "pres", "method"];
+const LS_OUT = "pp-newspapers-v3", LS_SEC = "pp-sections";   // v3: Le Monde is one newspaper again, sections are a filter
+// Section labels (others are shown as they come); politics first, then alphabetical
+const SEC_NAMES = {politique: ["Politics", "Politique"], international: ["International", "International"], "économie": ["Economy", "Économie"], economie: ["Economy", "Économie"],
+  "société": ["Society", "Société"], societe: ["Society", "Société"], culture: ["Culture", "Culture"], sport: ["Sport", "Sport"]};
+const secName = x => SEC_NAMES[x] ? L(...SEC_NAMES[x]) : x.charAt(0).toUpperCase() + x.slice(1);
+const secOrder = (a, b) => (b === "politique") - (a === "politique") || a.localeCompare(b, "fr");
+// Static fallback, relative to this page: site/index.json, used for the search only if the API’s /names route fails.
 const DATA = "site/";
 const getJSON = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + " " + r.status); return r.json(); });
+// Scores come from the /portraits route of the Ngramsci API: one CSV row per month × newspaper × section, as stored in the `cells` table.
+// Add ?api=<url> to this page’s address to point it at another server (a local Flask, say).
+const API = (() => { try { const u = new URLSearchParams(location.search).get("api"); if (u) return u; } catch (e) {} return "https://shiny.ens-paris-saclay.fr/guni/portraits"; })();
+const API_ROOT = API.replace(/\/portraits\/?$/, "");   // the other routes sit next to /portraits
+const DK = ["valence", "extremisme", "dynamique"], SUMS = ["S_", "SS_", "WS_"];
+// RFC 4180 CSV: quoted fields may hold commas, quotes ("") and newlines
+function parseCSV(t) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0, n = t.length; i < n; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; continue; }
+    if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && t[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.length > 1 || r[0] !== "");
+}
+// Column positions (case-insensitive). `cells` stores sums, so cells pool by adding them up:
+// W = Σw, WW = Σ_d W_d² (one W_d per article), and per score S = Σw·score, SS = Σ_d S_d², WS = Σ_d W_d·S_d.
+const ALIAS = {nom: ["nom", "name"], month: ["month", "mois", "yyyymm", "ym", "yearmonth", "date"], year: ["year", "annee", "année"],
+  newspaper: ["newspaper", "outlet", "journal", "source", "media"], section: ["section", "rubrique"],
+  n_docs: ["n_articles", "n_docs", "n_doc", "articles"], W: ["w", "weight", "sum_w", "w_sum"], WW: ["ww", "w2", "sum_w2", "sum_ww", "ww_sum"]};
+const DIMA = {valence: ["valence"], extremisme: ["extremisme", "extremism"], dynamique: ["dynamique", "momentum"]};
+function columns(head) {
+  const h = head.map(x => x.trim().toLowerCase()), find = al => { for (const a of al) { const j = h.indexOf(a); if (j >= 0) return j; } return -1; };
+  const c = {}; for (const k in ALIAS) c[k] = find(ALIAS[k]);
+  for (const dm in DIMA) for (const p of ["S_", "SS_", "WS_"]) c[p + dm] = find(DIMA[dm].map(a => p.toLowerCase() + a));
+  const miss = ["newspaper", "month", "W", "WW", "S_valence", "SS_valence", "WS_valence"].filter(k => c[k] < 0);
+  if (miss.length) throw new Error(`the CSV has no ${miss.join(", ")} column (it has: ${head.join(", ")})`);
+  return c;
+}
+// "2017-01", "201701", "2017-01-01", or a month number next to a year column → "2017-01"
+function ymOf(r, c) {
+  const s = String(r[c.month]).trim(), m = s.match(/^(\d{4})\D?(\d{1,2})(?!\d)/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}`;
+  if (c.year >= 0 && /^\d{1,2}$/.test(s)) return `${String(r[c.year]).trim()}-${s.padStart(2, "0")}`;
+  return null;
+}
+// a newspaper (or a newspaper × section) the page had not heard of extends the filters
+function outletIdx(code, sec) {
+  let i = S.outlets.indexOf(code); if (i < 0) { i = S.outlets.push(code) - 1; S.newOutlets = true; }
+  if (sec) { const ss = S.npSecs.get(code); if (ss && !ss.has(sec)) { ss.add(sec); S.newOutlets = true; }
+    if (!S.secAll.includes(sec)) { S.secAll.push(sec); S.secAll.sort(secOrder); S.newOutlets = true; } }
+  return i;
+}
+// CSV rows → one columnar store of cells (outlet index, "YYYY-MM", weights, scores)
+function toCells(rows, c) {
+  const R = {o: [], s: [], ym: [], W: [], WW: [], n_docs: []}; for (const dm of DK) for (const p of SUMS) R[p + dm] = [];
+  const num = (r, j) => { if (j < 0 || r[j] == null || r[j] === "") return NaN; return +r[j]; };
+  for (const r of rows) {
+    const np = String(r[c.newspaper] ?? "").trim(), sec = c.section >= 0 ? String(r[c.section] ?? "").trim() : "politique";
+    const ym = ymOf(r, c), W = num(r, c.W);
+    if (!np || !ym || !(W > 0)) continue;
+    const ww = num(r, c.WW), n = num(r, c.n_docs);
+    R.o.push(outletIdx(np, sec)); R.s.push(sec); R.ym.push(ym); R.W.push(W); R.WW.push(Number.isFinite(ww) ? ww : 0); R.n_docs.push(Number.isFinite(n) ? n : 0);
+    for (const dm of DK) for (const p of SUMS) R[p + dm].push(num(r, c[p + dm]));
+  }
+  return R;
+}
+// one cell per newspaper × section × year (or month); sections stay apart so the section filter can pick them
+function aggregate(R, label) {
+  const lab = label === "year" ? i => +R.ym[i].slice(0, 4) : i => R.ym[i];
+  const out = {[label]: [], o: [], s: [], W: [], WW: [], n_docs: []}; for (const dm of DK) { out[dm] = []; out["se_" + dm] = []; for (const p of SUMS) out[p + dm] = []; }
+  for (const [, idx] of groupBy(R.o, i => R.o[i] + "|" + R.s[i] + "|" + lab(i))) {
+    const i0 = idx[0];
+    out.o.push(R.o[i0]); out.s.push(R.s[i0]); out[label].push(lab(i0));
+    out.W.push(idx.reduce((a, i) => a + R.W[i], 0)); out.WW.push(idx.reduce((a, i) => a + R.WW[i], 0)); out.n_docs.push(idx.reduce((a, i) => a + R.n_docs[i], 0));
+    // sums add up; the mean and its standard error are kept too, for code that reads them per cell
+    for (const dm of DK) { for (const p of SUMS) out[p + dm].push(idx.reduce((a, i) => a + R[p + dm][i], 0));
+      const m = merge(R, idx, dm); out[dm].push(m ? m.R : NaN); out["se_" + dm].push(m ? m.se : 0); }
+  }
+  return out;
+}
+const person = R => ({y: aggregate(R, "year"), m: aggregate(R, "month")});
+async function fetchCSV(params) {
+  const u = API + "?" + new URLSearchParams(params).toString();
+  const r = await fetch(u);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const rows = parseCSV(await r.text());
+  return rows.length ? {c: columns(rows[0]), rows: rows.slice(1)} : {c: null, rows: []};
+}
+// one person, every newspaper and every month, kept for the session (an unknown name resolves to undefined)
+function loadName(k) {
+  if (!S.cache.has(k)) {
+    const p = fetchCSV({nom: k}).then(({c, rows}) => {
+      if (!c || !rows.length) return undefined;
+      const R = toCells(rows, c); if (!R.o.length) return undefined;
+      register(k, c.nom >= 0 ? rows[0][c.nom] : null, R.n_docs.reduce((a, b) => a + b, 0));
+      refreshOutlets(); S.done.add(k);
+      return person(R);
+    });
+    p.catch(() => S.cache.delete(k));
+    S.cache.set(k, p);
+  }
+  return S.cache.get(k);
+}
+// names that are not in index.json (looked up, or index missing) get an entry of their own
+const titleOf = k => k.replace(/(^|[ -])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+function register(k, name, n) {
+  if (!S.byKey.has(k)) S.byKey.set(k, S.index.names.push([k, name || titleOf(k), n, null, []]) - 1);
+  else { const e = S.index.names[S.byKey.get(k)]; if (e[2] == null && n != null) e[2] = n; }
+}
+const ent = k => S.byKey.has(k) ? S.index.names[S.byKey.get(k)] : [k, titleOf(k), null, null, []];
+// Loading state: charts waiting for the API fade and show a label. It appears only after 200 ms, so fast answers don't flicker;
+// a counter per chart keeps it on while any request for that chart is still running.
+const BUSY = new Map();
+function busyOn(ids, label) {
+  for (const id of ids) BUSY.set(id, (BUSY.get(id) || 0) + 1);
+  setTimeout(() => ids.forEach(id => { if (BUSY.get(id) > 0) { const e = $(id); e.dataset.busy = label || L("Loading…", "Chargement…"); e.classList.add("busy"); } }), 200);
+}
+function busyOff(ids) { for (const id of ids) { const n = Math.max((BUSY.get(id) || 1) - 1, 0); BUSY.set(id, n); if (!n) $(id).classList.remove("busy"); } }
+async function whileBusy(ids, label, f) { busyOn(ids, label); try { return await f(); } finally { busyOff(ids); } }
+const API_ERR = () => L(`Could not get the data from the Ngramsci API (${S.apiErr}).`, `Impossible d’obtenir les données de l’API Ngramsci (${S.apiErr}).`);
+function showBanner() { const t = S.apiErr ? API_ERR() : ""; $("demo").hidden = !t; $("demo").textContent = t; }
+function apiOk() { if (S.apiErr) { S.apiErr = null; showBanner(); } }
+function apiFail(e) {
+  S.apiErr = e.message || String(e); showBanner();
+  const ids = S.tab === "corpora" ? ["byout", "heat", "summary"] : S.tab === "pres" ? ["pc-over", "pc-heat", "pc-pca"] : ["timechart", "men"];
+  for (const id of ids) $(id).innerHTML = `<div class="empty">${esc(API_ERR())}</div>`;
+  for (const id of ["out-sub", "heat-sub", "sum-sub", "time-sub", "men-sub", "pc-over-sub", "pc-heat-sub", "pc-pca-sub"]) $(id).textContent = "";
+}
 const $ = id => document.getElementById(id);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const fmt = x => (x >= 0 ? "+" : "−") + dec(Math.abs(x).toFixed(3));
 let nf = new Intl.NumberFormat(LOC());
 
-const S = {index: null, byKey: new Map(), outlets: [], sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), tab: "top", heat: 0, osort: "score",
+const S = {index: null, byKey: new Map(), outlets: [], npSecs: new Map(), secAll: ["politique"], osel: new Set(),
+  secs: (() => { try { const v = JSON.parse(localStorage.getItem(LS_SEC) || "null"); if (Array.isArray(v) && v.length) return new Set(v); } catch (e) {} return new Set(["politique"]); })(),
+  sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), done: new Set(), apiErr: null, tab: "top", heat: 0, osort: "score",
   ci: (() => { try { return localStorage.getItem("pp-ci") !== "off"; } catch (e) { return true; } })(),
   adj: (() => { try { return localStorage.getItem("pp-adj") === "rel"; } catch (e) { return false; } })(),
   tgap: false};
@@ -500,45 +690,49 @@ const gapOn = () => S.tgap && !!S.oset && S.oset.size > 0;
 const Z = () => S.ci ? 1.96 : 0;
 
 const key = s => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-const crc32 = s => { let c = 0xFFFFFFFF; for (const b of new TextEncoder().encode(s)) c = CRC[(c ^ b) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
-
-async function loadName(k) {
-  const b = crc32(k) % S.index.n_buckets, f = `${DATA}data/b_${String(b).padStart(3, "0")}.json`;
-  if (!S.cache.has(f)) S.cache.set(f, getJSON(f));
-  return (await S.cache.get(f))[k];
-}
-
 // Merge cells: R = Σ W_i R_i / W ; var = Σ (W_i² se_i² + WW_i (R_i − R)²) / W²  (same as explorer.merged)
+// API cells carry sums: pooling adds them, then R = S/W and, with articles as clusters,
+// Var(R) = (SS − 2R·WS + R²·WW) / W². Cells without the score are skipped.
+// Cells that carry (R, se) instead are pooled with the formula below.
 function merge(c, idx, dim) {
-  let W = 0, WR = 0, n = 0;
-  for (const i of idx) { W += c.W[i]; WR += c.W[i] * c[dim][i]; n += c.n_docs[i]; }
+  const cs = c["S_" + dim];
+  if (cs) {
+    const ss = c["SS_" + dim], ws = c["WS_" + dim]; let W = 0, S = 0, SS = 0, WS = 0, WW = 0, n = 0;
+    for (const i of idx) { if (!Number.isFinite(cs[i])) continue; W += c.W[i]; S += cs[i]; SS += ss[i] || 0; WS += ws[i] || 0; WW += c.WW[i]; n += c.n_docs[i]; }
+    if (!(W > 0)) return null;
+    const R = S / W;
+    return {R, se: Math.sqrt(Math.max(SS - 2 * R * WS + R * R * WW, 0)) / W, n};
+  }
+  let W = 0, WR = 0, n = 0; const ok = [];
+  for (const i of idx) { const x = c[dim][i]; if (!Number.isFinite(x)) continue; ok.push(i); W += c.W[i]; WR += c.W[i] * x; n += c.n_docs[i]; }
   if (!W) return null;
   const R = WR / W; let v = 0;
-  for (const i of idx) { const se = c["se_" + dim][i], d = c[dim][i] - R; v += c.W[i] * c.W[i] * se * se + c.WW[i] * d * d; }
+  for (const i of ok) { const se = c["se_" + dim][i] || 0, d = c[dim][i] - R; v += c.W[i] * c.W[i] * se * se + c.WW[i] * d * d; }
   return {R, se: Math.sqrt(v) / W, n};
 }
 const groupBy = (arr, f) => { const m = new Map(); arr.forEach((x, i) => { const k = f(i); if (k == null) return; (m.get(k) || m.set(k, []).get(k)).push(i); }); return m; };
 
 const inPeriod = y => y >= S.y0 && y <= S.y1;
+// a cell counts when its section is picked and its newspaper is (S.oset null: every newspaper that has those sections)
+const cOK = (c, i) => S.secs.has(c.s[i]) && (!S.oset || S.oset.has(c.o[i]));
 // Monthly cells are usable if they exist and, when newspapers are filtered, carry an outlet index (m.o, like y.o).
 const hasM = d => !!d.m && (!S.oset || !!d.m.o);
 // Is this person drawn by year while a finer step is selected?
 const fallback = d => S.res !== "year" && !hasM(d);
 function monthGroups(m) {
   return groupBy(m.month, i => {
-    if (S.oset && !S.oset.has(m.o[i])) return null;
+    if (!cOK(m, i)) return null;
     const [y, mo] = m.month[i].split("-").map(Number);
     if (!inPeriod(y)) return null;
     return S.res === "month" ? m.month[i] : `${y}-Q${Math.floor((mo - 1) / 3) + 1}`;
   });
 }
 const labT = lab => { const y = +lab.slice(0, 4); return S.res === "month" ? y + (+lab.slice(5) - 0.5) / 12 : y + (+lab.slice(6) - 0.5) / 4; };
-function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && (!S.oset || S.oset.has(d.y.o[i]))); }
+function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && cOK(d.y, i)); }
 
 function series(d) {
   if (gapOn()) {
-    const all = d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]));
+    const all = d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && S.secs.has(d.y.s[i]));
     return [...groupBy(all, j => d.y.year[all[j]])].map(([y, js]) => {
       const ii = js.map(j => all[j]), a = merge(d.y, ii.filter(i => S.oset.has(d.y.o[i])), S.dim), b = merge(d.y, ii.filter(i => !S.oset.has(d.y.o[i])), S.dim);
       if (!a || !b || b.n < S.minn) return null;
@@ -840,7 +1034,7 @@ $("osort").addEventListener("click", e => { const b = e.target.closest("button")
 function drawSummary(data) {
   const box = $("summary"); box.innerHTML = "";
   if (!data.length) { box.innerHTML = `<div class="empty">${L("Add a person to see their scores.", "Ajoutez une personne pour voir ses scores.")}</div>`; return; }
-  const rows = data.map(({k, d}) => { const idx = yearCells(d), e = S.index.names[S.byKey.get(k)];
+  const rows = data.map(({k, d}) => { const idx = yearCells(d), e = ent(k);
     const r = {k, name: e[1], alts: e[4], n: idx.reduce((a, i) => a + d.y.n_docs[i], 0), col: css(SERIES[S.sel.indexOf(k)])};
     for (const dm of Object.keys(DIMS)) r[dm] = mergeP(k, d, idx, dm); return r; });
   const W = Math.max(box.clientWidth - 8, 680), rowH = 30, top = 44, bot = 24, left = 150, gp = 28;
@@ -882,13 +1076,45 @@ function drawSummary(data) {
 }
 
 // ranking: the most mentioned people of the selected period and newspapers, three panels sharing the row order
-const RK = {data: null, by: null, ends: 15, all: false, min: 500, byN: false, loading: null};
+const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false};
 // rank by the score picked in the filters above, or by number of articles
 const RKS = () => RK.byN ? "n" : S.dim;
+// /rankings_portraits?from&to&min&section[&newspaper]: one row per person, sums pooled over the period and newspapers,
+// plus E_<score> / EW, the leave-one-out newspaper baseline used by relative scores. Kept per query.
+function rankQ() { const p = {from: S.y0, to: S.y1, min: RK.min, section: [...S.secs].sort().join(",")}; if (S.oset) p.newspaper = [...S.oset].map(i => S.outlets[i]).sort().join(","); return new URLSearchParams(p).toString(); }
+// Either CSV with <score>_mean and <score>_se per person (your route), or JSON with the sums (ngramsci_routes.py).
+// Both become {key, name, n, R: {score: []}, se: {score: []}, E: {score: []} or null}; E is the relative-score baseline.
+function rankTable(t) {
+  t = t.trim();
+  const out = {key: [], name: [], n: [], R: {}, se: {}, E: null}; for (const dm of DK) { out.R[dm] = []; out.se[dm] = []; }
+  if (t[0] === "{") {
+    const d = JSON.parse(t); d.n_docs = d.n_articles; if (d.EW) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
+    d.key.forEach((k, j) => { out.key.push(k); out.name.push(d.name[j]); out.n.push(d.n_articles[j]);
+      for (const dm of DK) { const m = merge(d, [j], dm); out.R[dm].push(m ? m.R : NaN); out.se[dm].push(m ? m.se : NaN);
+        if (out.E) out.E[dm].push(d.EW[j] > 0 ? d["E_" + dm][j] / d.EW[j] : NaN); } });
+    return out;
+  }
+  const rows = parseCSV(t); if (!rows.length) return out;
+  const h = rows[0].map(x => x.trim().toLowerCase()), at = (...a) => a.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
+  const ki = at("key"), ni = at("name", "nom"), ai = at("n_articles", "n_docs", "n");
+  const col = (dm, suf) => at(...DIMA[dm].flatMap(a => [`${a}_${suf}`, `${suf}_${a}`]));
+  const mi = Object.fromEntries(DK.map(dm => [dm, col(dm, "mean")])), si = Object.fromEntries(DK.map(dm => [dm, col(dm, "se")]));
+  const ei = Object.fromEntries(DK.map(dm => [dm, col(dm, "expected")]));
+  if (ki < 0 || ai < 0 || mi.valence < 0) throw new Error(`rankings_portraits: unexpected columns (${rows[0].join(", ")})`);
+  if (DK.every(dm => ei[dm] >= 0)) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
+  const num = (r, j) => j < 0 || r[j] === "" || r[j] == null ? NaN : +r[j];
+  for (const r of rows.slice(1)) { if (!r[ki]) continue;
+    out.key.push(r[ki]); out.name.push(ni >= 0 ? r[ni] : null); out.n.push(num(r, ai));
+    for (const dm of DK) { out.R[dm].push(num(r, mi[dm])); out.se[dm].push(num(r, si[dm])); if (out.E) out.E[dm].push(num(r, ei[dm])); } }
+  return out;
+}
 function loadRanking() {
-  if (!RK.loading) RK.loading = getJSON(DATA + "ranking.json").then(d => {
-    RK.data = d; RK.by = new Map(); d.i.forEach((v, j) => (RK.by.get(v) || RK.by.set(v, []).get(v)).push(j)); });
-  return RK.loading;
+  const q = rankQ();
+  if (!RK.cache.has(q)) {
+    const pr = fetchText(API_ROOT + "/rankings_portraits?" + q).then(rankTable);
+    pr.catch(() => RK.cache.delete(q)); RK.cache.set(q, pr);
+  }
+  return RK.cache.get(q);
 }
 const EXT_ALL = {en: {valence: ["Judged most positively", "Judged most negatively", "Best and worst judged"],
   extremisme: ["Framed as most extreme", "Framed as most moderate", "Most extreme and most moderate"],
@@ -899,20 +1125,31 @@ const EXT_ALL = {en: {valence: ["Judged most positively", "Judged most negativel
   dynamique: ["En plus forte progression", "En plus fort recul", "Plus fortes progressions et plus forts reculs"],
   n: ["Les plus cités", "Les moins cités", "Les plus et les moins cités"]}};
 let EXT = EXT_ALL[LANG];
-// Newspaper baseline. For each newspaper × year, the mention-weighted mean score of everyone in ranking.json.
+// Newspaper baseline (/baseline). For each newspaper × year, the mention-weighted mean score of everyone scored.
 // A relative score is a person's score minus the baseline they would get from the same newspapers in the same
 // years, each cell weighted like the person's own cells. The person's own cells are left out of the baseline
 // (leave-one-out), so 0 means "treated like the other people these papers wrote about that year".
-const BASE = {sums: null, keys: null};
-function baseSums() {
-  if (BASE.sums) return BASE.sums;
-  const d = RK.data, om = d.outlets.map(o => S.outlets.indexOf(o)), sums = new Map();
-  d.year.forEach((y, j) => { const key = om[d.o[j]] + "|" + y; let c = sums.get(key);
-    if (!c) sums.set(key, c = {W: 0, valence: 0, extremisme: 0, dynamique: 0});
-    c.W += d.W[j]; for (const dm of Object.keys(DIMS_ALL.en)) c[dm] += d.W[j] * d[dm][j]; });
-  BASE.keys = new Set(d.keys);
-  return BASE.sums = sums;
+const BASE = {sums: null, p: null};
+// /baseline: year, newspaper, section, W, S_<score> (CSV or JSON columns), everyone's totals per cell
+function loadBase() {
+  if (!BASE.p) {
+    BASE.p = fetchText(API_ROOT + "/baseline").then(t => {
+      t = t.trim(); let d;
+      if (t[0] === "{") d = JSON.parse(t);
+      else { const rows = parseCSV(t), h = rows[0].map(x => x.trim()); d = {};
+        h.forEach((c, j) => { d[c] = rows.slice(1).map(r => r[j]); }); }
+      const need = ["year", "newspaper", "section", "W", "S_valence", "S_extremisme", "S_dynamique"].filter(c => !d[c]);
+      if (need.length) throw new Error(`baseline has no ${need.join(", ")} column`);
+      const sums = new Map();
+      d.year.forEach((y, j) => sums.set(outletIdx(d.newspaper[j], d.section[j]) + "|" + d.section[j] + "|" + (+y),
+        {W: +d.W[j], valence: +d.S_valence[j], extremisme: +d.S_extremisme[j], dynamique: +d.S_dynamique[j]}));
+      refreshOutlets(); BASE.sums = sums;
+    });
+    BASE.p.catch(e => { console.warn("baseline:", e); BASE.p = null; });
+  }
+  return BASE.p;
 }
+const baseSums = () => BASE.sums;
 // cells: score store (W + dimension arrays), idx: cell indices, oy(i): "outlet|year" of cell i, loo: drop the cell itself
 function expected(cells, idx, dm, oy, loo) {
   const sums = baseSums(); let W = 0, E = 0;
@@ -924,7 +1161,7 @@ function expected(cells, idx, dm, oy, loo) {
 // merge for one person's yearly cells, made relative when the toggle is on
 function mergeP(k, d, idx, dm) {
   const r = merge(d.y, idx, dm); if (!r || !S.adj) return r;
-  const E = expected(d.y, idx, dm, i => d.y.o[i] + "|" + d.y.year[i], BASE.keys.has(k));
+  const E = expected(d.y, idx, dm, i => d.y.o[i] + "|" + d.y.s[i] + "|" + d.y.year[i], true);   // everyone is in the baseline
   return E == null ? null : {...r, R: r.R - E, raw: r.R};
 }
 const ADJ_NOTE = () => L("Relative scores: each value minus how the same newspapers, in the same years, treated the other people scored. 0 means treated like everyone else.",
@@ -936,18 +1173,23 @@ async function drawRanking() {
   $("rk-score").textContent = DIMS[S.dim].label;
   document.querySelectorAll("#rk-sort button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.k === "n") === RK.byN)));
   document.querySelectorAll("#rk-show button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.v === "all") === RK.all)));
-  try { await loadRanking(); } catch (e) { $("rk-sub").textContent = L("The ranking could not be loaded. Reload the page to try again.", "Le classement n’a pas pu être chargé. Rechargez la page pour réessayer."); return; }
-  const d = RK.data, om = d.outlets.map(o => S.outlets.indexOf(o));
+  const my = ++RK.tok;
+  if (S.oset && !S.oset.size) { box.innerHTML = `<div class="empty">${L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")}</div>`; $("rk-sub").textContent = ""; return; }
+  if (!RK.cache.has(rankQ())) $("rk-sub").textContent = L("Loading the ranking…", "Chargement du classement…");
+  let d;
+  try { d = await whileBusy(["rank"], L("Computing the ranking…", "Calcul du classement…"), loadRanking); } catch (e) { if (my !== RK.tok) return; box.innerHTML = "";
+    $("rk-sub").textContent = L(`The ranking could not be loaded from the API (${e.message}).`, `Le classement n’a pas pu être chargé depuis l’API (${e.message}).`); return; }
+  if (my !== RK.tok) return;
   const people = [];
-  for (const [i, js] of RK.by) {
-    const idx = js.filter(j => inPeriod(d.year[j]) && (!S.oset || S.oset.has(om[d.o[j]])));
-    if (!idx.length) continue;
-    const n = idx.reduce((a, j) => a + d.n_docs[j], 0); if (n < RK.min) continue;
-    const r = {i, n, name: d.names[i], key: d.keys[i]};
-    for (const dm of Object.keys(DIMS)) { const m = merge(d, idx, dm); r[dm] = m.R; r[dm + "_ci"] = 1.96 * m.se;
-      if (S.adj) { const E = expected(d, idx, dm, j => om[d.o[j]] + "|" + d.year[j], true); if (E != null) r[dm] -= E; } }
+  d.key.forEach((k, j) => {
+    const n = d.n[j]; if (!(n >= RK.min)) return;
+    const r = {i: j, n, name: d.name[j] || titleOf(k), key: k};
+    for (const dm of Object.keys(DIMS)) { const R = d.R[dm][j]; if (!Number.isFinite(R)) return;
+      r[dm] = R; r[dm + "_ci"] = 1.96 * (d.se[dm][j] || 0);
+      if (S.adj && d.E && Number.isFinite(d.E[dm][j])) r[dm] -= d.E[dm][j]; }
     people.push(r);
-  }
+  });
+  const noRel = S.adj && !d.E;   // the route sends no baseline: raw scores, said so below
   people.sort((a, b) => b[RKS()] - a[RKS()]);
   people.forEach((r, j) => r.rank = j + 1);
   const N = people.length, e = RK.ends, split = N > 2 * e, mid = split ? N - 2 * e : 0;
@@ -959,7 +1201,9 @@ async function drawRanking() {
     `${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "personne est citée" : "personnes sont citées"} dans au moins ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `Toutes, classées par ${what} ; les ${e} de chaque bout sont signalées.` : `Seuls les deux bouts sont affichés : les ${e} plus hautes et les ${e} plus basses en ${what} ; les ${nf.format(mid)} du milieu sont masquées.`)
       : `Toutes, classées par ${what}.`) + ` Points : moyennes${S.ci ? " avec intervalles à 95 %" : ""} ; chaque panneau a sa propre échelle. Cliquez sur un nom pour suivre la personne dans le temps.`);
-  if (S.adj) $("rk-sub").textContent += " " + ADJ_NOTE();
+  if (noRel) $("rk-sub").textContent += " " + L("Relative scores are not available in the ranking yet (the API sends no newspaper baseline): these are raw scores.",
+    "Les scores relatifs ne sont pas encore disponibles dans le classement (l’API n’envoie pas la référence par journal) : ce sont des scores bruts.");
+  else if (S.adj) $("rk-sub").textContent += " " + ADJ_NOTE();
   // layout: band labels, rows, and the gap between the two ends
   const items = [];
   if (split) {
@@ -1014,9 +1258,9 @@ async function drawRanking() {
     const show = ev => { const b = box.getBoundingClientRect();
       tipAt(box, tip, ev.clientX - b.left + box.scrollLeft, ev.clientY - b.top, `<b>${r.rank} ${L("of", "sur")} ${nf.format(N)}. ${esc(r.name)} · ${nf.format(r.n)} articles</b>` +
         Object.entries(DIMS).map(([dm, p]) => `<div class="r"><i></i><span>${p.label}</span><span class="v">${fmt(r[dm])} ± ${dec(r[dm + "_ci"].toFixed(3))}</span></div>`).join("") +
-        `<div class="r"><i></i><span class="n" style="grid-column:2/4">${S.byKey.has(r.key) ? (S.sel.includes(r.key) ? L("Selected · click to follow over time", "Sélectionnée · cliquez pour la suivre dans le temps") : S.sel.length >= MAXP ? L("Click to follow over time (replaces the last person)", "Cliquez pour la suivre dans le temps (remplace la dernière personne)") : L("Click to follow over time", "Cliquez pour la suivre dans le temps")) : ""}</span></div>`); };
+        `<div class="r"><i></i><span class="n" style="grid-column:2/4">${(S.sel.includes(r.key) ? L("Selected · click to follow over time", "Sélectionnée · cliquez pour la suivre dans le temps") : S.sel.length >= MAXP ? L("Click to follow over time (replaces the last person)", "Cliquez pour la suivre dans le temps (remplace la dernière personne)") : L("Click to follow over time", "Cliquez pour la suivre dans le temps"))}</span></div>`); };
     hit.addEventListener("pointermove", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
-    hit.addEventListener("click", () => { if (!S.byKey.has(r.key)) return; if (!S.sel.includes(r.key)) { if (S.sel.length >= MAXP) S.sel.pop(); S.sel.push(r.key); } goTab("time"); $("tabs").scrollIntoView({block: "start"}); });
+    hit.addEventListener("click", () => { register(r.key, r.name, r.n); if (!S.sel.includes(r.key)) { if (S.sel.length >= MAXP) S.sel.pop(); S.sel.push(r.key); } goTab("time"); $("tabs").scrollIntoView({block: "start"}); });
     svg.append(hit); });
   for (const it of items) if (it.node) svg.append(it.node);   // keep the "show everyone" link above the hit areas
   box.append(svg, tip);
@@ -1032,9 +1276,326 @@ $("rk-show").addEventListener("click", e => { const b = e.target.closest("button
 $("rk-min").addEventListener("change", e => { RK.min = +e.target.value; drawRanking(); });
 $("rk-sort").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.byN = b.dataset.k === "n"; drawRanking(); });
 
+// ---------- 2027 presidential election ----------
+// Main declared or likely candidates as of November 2026: [key the API matches, display name]. Edit freely.
+const CANDS = [["marine le pen", "Marine Le Pen"], ["jordan bardella", "Jordan Bardella"], ["jean luc melenchon", "Jean-Luc Mélenchon"],
+  ["raphael glucksmann", "Raphaël Glucksmann"], ["edouard philippe", "Édouard Philippe"], ["gabriel attal", "Gabriel Attal"],
+  ["bruno retailleau", "Bruno Retailleau"], ["david lisnard", "David Lisnard"], ["eric zemmour", "Éric Zemmour"],
+  ["fabien roussel", "Fabien Roussel"], ["marine tondelier", "Marine Tondelier"], ["dominique de villepin", "Dominique de Villepin"]];
+const PC = {on: new Set(CANDS.map(c => c[0])), months: 6, mode: "gap", tone: "drop", cache: new Map(), names: new Map(), last: []};
+const pcName = k => PC.names.get(k) || (CANDS.find(c => c[0] === k) || [k, titleOf(k)])[1];
+const surname = s => { const w = s.split(" "); return w.length > 1 ? w.slice(1).join(" ") : s; };
+const ymAdd = (y, m, d) => { const t = y * 12 + (m - 1) + d; return [Math.floor(t / 12), t % 12 + 1]; };
+const ymStr = ([y, m]) => `${y}-${String(m).padStart(2, "0")}`;
+// the last PC.months months, current month included
+function pcPeriod() { const n = new Date(), now = [n.getFullYear(), n.getMonth() + 1]; return {from: ymStr(ymAdd(...now, 1 - PC.months)), to: ymStr(now)}; }
+function pcPeriodLabel(p) {
+  const f = new Intl.DateTimeFormat(LOC(), {month: "long", year: "numeric"}), d = s => new Date(+s.slice(0, 4), +s.slice(5) - 1, 15);
+  return `${f.format(d(p.from))} – ${f.format(d(p.to))}`;
+}
+const fmt2 = x => Math.abs(x) < 0.005 ? "0" : (x > 0 ? "+" : "−") + dec(Math.abs(x).toFixed(2));
+// every candidate, every newspaper, monthly cells from `from` on; one request per candidate, kept for the session
+function loadPres(from) {
+  if (!PC.cache.has(from)) {
+    const p = Promise.all(CANDS.map(async ([k]) => {
+      const {c, rows} = await fetchCSV({nom: k, from: from.replace("-", "")});
+      if (!c || !rows.length) return [k, null];
+      const R = toCells(rows, c); if (!R.o.length) return [k, null];
+      if (c.nom >= 0 && rows[0][c.nom]) PC.names.set(k, rows[0][c.nom]);
+      return [k, aggregate(R, "month")];
+    })).then(a => { refreshOutlets(); return new Map(a); });
+    p.catch(() => PC.cache.delete(from));
+    PC.cache.set(from, p);
+  }
+  return PC.cache.get(from);
+}
+// per candidate: pooled score over the period and the selected newspapers, and one score per newspaper (≥ S.minn articles)
+function pcTables(data, per) {
+  const rows = [], missing = [];
+  for (const [k] of CANDS) {
+    if (!PC.on.has(k)) continue;
+    const d = data.get(k); if (!d) { missing.push(pcName(k)); continue; }
+    const idx = d.month.map((_, i) => i).filter(i => d.month[i] >= per.from && d.month[i] <= per.to && cOK(d, i));
+    const all = merge(d, idx, S.dim); if (!all) { missing.push(pcName(k)); continue; }
+    const by = new Map();
+    for (const [o, js] of groupBy(idx, j => d.o[idx[j]])) { const r = merge(d, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) by.set(o, r); }
+    rows.push({k, name: pcName(k), d, idx, all, by});
+  }
+  return {rows, missing};
+}
+// score = μ + candidate + newspaper, fitted on the observed cells; the residual is what is specific to the pair
+function additive(obs) {
+  const a = new Map(), b = new Map(), mean = xs => xs.reduce((s, x) => s + x, 0) / (xs.length || 1);
+  obs.forEach(c => { a.set(c.k, 0); b.set(c.o, 0); });
+  let mu = mean(obs.map(c => c.R));
+  for (let it = 0; it < 60; it++) {
+    for (const k of a.keys()) a.set(k, mean(obs.filter(c => c.k === k).map(c => c.R - mu - b.get(c.o))));
+    for (const o of b.keys()) b.set(o, mean(obs.filter(c => c.o === o).map(c => c.R - mu - a.get(c.k))));
+    mu = mean(obs.map(c => c.R - a.get(c.k) - b.get(c.o)));
+  }
+  return {mu, a, b};
+}
+function pcMatrix(rows) {
+  const outs = [...new Set(rows.flatMap(r => [...r.by.keys()]))].filter(o => rows.filter(r => r.by.has(o)).length >= 2);
+  const obs = []; rows.forEach(r => outs.forEach(o => { const x = r.by.get(o); if (x) obs.push({o, k: r.k, R: x.R}); }));
+  const fit = PC.mode === "net" && obs.length ? additive(obs) : null, cell = new Map();
+  for (const r of rows) for (const o of outs) {
+    const x = r.by.get(o); if (!x) continue;
+    let v = x.R, se = x.se, nOther = null;
+    if (PC.mode === "gap") {
+      const other = merge(r.d, r.idx.filter(i => r.d.o[i] !== o), S.dim); if (!other || other.n < S.minn) continue;
+      v = x.R - other.R; se = Math.hypot(x.se, other.se); nOther = other.n;
+    } else if (fit) v = x.R - fit.mu - fit.a.get(r.k) - fit.b.get(o);
+    cell.set(o + "|" + r.k, {v, se, R: x.R, n: x.n, nOther});
+  }
+  return {outs: outs.filter(o => rows.some(r => cell.has(o + "|" + r.k))), cell};
+}
+// symmetric eigen-decomposition (cyclic Jacobi); vecs[q] is the q-th eigenvector, by decreasing eigenvalue
+function jacobi(A) {
+  const n = A.length, a = A.map(r => r.slice()), V = a.map((_, i) => a.map((_, j) => +(i === j)));
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let off = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += a[i][j] * a[i][j];
+    if (off < 1e-24) break;
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+      if (Math.abs(a[p][q]) < 1e-20) continue;
+      const th = (a[q][q] - a[p][p]) / (2 * a[p][q]), t = (th >= 0 ? 1 : -1) / (Math.abs(th) + Math.sqrt(th * th + 1)), c = 1 / Math.sqrt(t * t + 1), s = t * c;
+      for (let k = 0; k < n; k++) { const x = a[k][p], y = a[k][q]; a[k][p] = c * x - s * y; a[k][q] = s * x + c * y; }
+      for (let k = 0; k < n; k++) { const x = a[p][k], y = a[q][k]; a[p][k] = c * x - s * y; a[q][k] = s * x + c * y; }
+      for (let k = 0; k < n; k++) { const x = V[k][p], y = V[k][q]; V[k][p] = c * x - s * y; V[k][q] = s * x + c * y; }
+    }
+  }
+  const ord = [...Array(n).keys()].sort((i, j) => a[j][j] - a[i][i]);
+  return {vals: ord.map(i => a[i][i]), vecs: ord.map(i => V.map(r => r[i]))};
+}
+// PCA of a newspapers × candidates matrix (NaN = missing, filled in by iterative rank-2 PCA).
+// tone: also centre each row, so a newspaper’s average over the candidates does not count.
+function pca(M, tone) {
+  const nr = M.length, nc = M[0].length, miss = M.map(r => r.map(v => !Number.isFinite(v))), any = miss.some(r => r.some(Boolean));
+  const X = M.map(r => r.slice());
+  for (let j = 0; j < nc; j++) { let s = 0, n = 0; for (let i = 0; i < nr; i++) if (!miss[i][j]) { s += X[i][j]; n++; } for (let i = 0; i < nr; i++) if (miss[i][j]) X[i][j] = s / n; }
+  let Y, E;
+  for (let it = 0; it < (any ? 200 : 1); it++) {
+    const rm = X.map(r => tone ? r.reduce((a, b) => a + b, 0) / nc : 0);
+    const cm = X[0].map((_, j) => X.reduce((a, r, i) => a + r[j] - rm[i], 0) / nr);
+    Y = X.map((r, i) => r.map((v, j) => v - rm[i] - cm[j]));
+    E = jacobi(cm.map((_, p) => cm.map((_, q) => Y.reduce((s, r) => s + r[p] * r[q], 0) / (nr - 1))));
+    if (!any) break;
+    let delta = 0;
+    for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) if (miss[i][j]) {
+      let v = rm[i] + cm[j];
+      for (let q = 0; q < 2; q++) v += Y[i].reduce((s, y, jj) => s + y * E.vecs[q][jj], 0) * E.vecs[q][j];
+      delta = Math.max(delta, Math.abs(v - X[i][j])); X[i][j] = v;
+    }
+    if (delta < 1e-9) break;
+  }
+  const tot = E.vals.reduce((s, v) => s + Math.max(v, 0), 0) || 1;
+  // sign: the candidate weighing most on an axis points to its positive side
+  const vecs = E.vecs.slice(0, 2).map(v => { let m = 0; for (const x of v) if (Math.abs(x) > Math.abs(m)) m = x; return m < 0 ? v.map(x => -x) : v; });
+  // arrows: loadings × √eigenvalue, so an axis that explains little stretches no arrow
+  const sd = E.vals.slice(0, 2).map(v => Math.sqrt(Math.max(v, 0)));
+  return {scores: Y.map(r => vecs.map(v => r.reduce((s, y, j) => s + y * v[j], 0))), load: M[0].map((_, j) => vecs.map((v, q) => v[j] * sd[q])),
+    expl: E.vals.slice(0, 2).map(v => Math.max(v, 0) / tot), nMiss: miss.flat().filter(Boolean).length};
+}
+// keep candidates seen in ≥ 3 newspapers and newspapers that see ≥ 60% of the kept candidates
+function pcPCA(rows) {
+  const outsAll = [...new Set(rows.flatMap(r => [...r.by.keys()]))];
+  let cols = rows.filter(r => outsAll.filter(o => r.by.has(o)).length >= 3);
+  const outs = outsAll.filter(o => cols.filter(r => r.by.has(o)).length >= Math.max(2, Math.ceil(cols.length * 0.6)));
+  cols = cols.filter(r => outs.filter(o => r.by.has(o)).length >= 3);
+  if (outs.length < 4 || cols.length < 3) return null;
+  const M = outs.map(o => cols.map(r => r.by.has(o) ? r.by.get(o).R : NaN));
+  return {...pca(M, PC.tone === "drop"), outs, cols, M};
+}
+
+function pcChips() {
+  $("pc-chips").innerHTML = CANDS.map(([k]) => `<button type="button" class="ochip" data-k="${esc(k)}" aria-pressed="${PC.on.has(k)}">${esc(pcName(k))}</button>`).join("");
+  $("pc-count").textContent = L(`${PC.on.size} of ${CANDS.length} selected`, `${PC.on.size} sur ${CANDS.length} sélectionnés`);
+  setSeg("pc-per", String(PC.months)); setSeg("pc-mode", PC.mode); setSeg("pc-tone", PC.tone);
+}
+function pcEmpty(msg) { for (const id of ["pc-over", "pc-heat", "pc-pca"]) $(id).innerHTML = `<div class="empty">${msg}</div>`; for (const id of ["pc-over-sub", "pc-heat-sub", "pc-pca-sub"]) $(id).textContent = ""; }
+
+async function drawPres(my) {
+  pcChips();
+  const per = pcPeriod(); $("pc-range").textContent = pcPeriodLabel(per);
+  if (!PC.on.size) { pcEmpty(L("Pick at least one candidate above.", "Choisissez au moins un candidat ci-dessus.")); return; }
+  if (S.oset && !S.oset.size) { pcEmpty(L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")); return; }
+  if (!PC.cache.has(per.from)) $("pc-over-sub").textContent = L("Loading the candidates from the API…", "Chargement des candidats depuis l’API…");
+  let data;
+  try { data = await whileBusy(["pc-over", "pc-heat", "pc-pca"], L("Loading the candidates…", "Chargement des candidats…"), () => loadPres(per.from)); } catch (e) { if (my === token) apiFail(e); return; }
+  if (my !== token) return;
+  apiOk(); pcChips();
+  const {rows, missing} = pcTables(data, per); PC.last = rows;
+  const lab = pcPeriodLabel(per), papers = S.oset ? L(`${S.oset.size} newspapers`, `${S.oset.size} journaux`) : L("all newspapers", "tous les journaux");
+  if (!rows.length) { pcEmpty(L(`No article on these candidates in ${lab}.`, `Aucun article sur ces candidats en ${lab}.`)); return; }
+  drawPcOver(rows);
+  const low = rows.filter(r => r.all.n < S.minn).map(r => r.name);
+  $("pc-over-sub").textContent = L(`${lab}, ${papers} · ${DIMS[S.dim].label}${S.ci ? " with 95% intervals" : ""}, every passage of the period pooled.`,
+    `${lab}, ${papers} · ${DIMS[S.dim].label}${S.ci ? " avec intervalles à 95 %" : ""}, tous les passages de la période réunis.`) +
+    (low.length ? " " + L(`Under ${S.minn} articles, left out: ${low.join(", ")}.`, `Moins de ${S.minn} articles, omis : ${low.join(", ")}.`) : "") +
+    (missing.length ? " " + L(`No article found for ${missing.join(", ")}.`, `Aucun article trouvé pour ${missing.join(", ")}.`) : "");
+  const mx = pcMatrix(rows), P = pcPCA(rows);
+  // order rows and columns along the first axis of the map, when there is one
+  const byName = (a, b) => oname(S.outlets[a]).localeCompare(oname(S.outlets[b]), "fr"), byScore = (a, b) => b.all.R - a.all.R;
+  const outs = P ? [...P.outs.map((o, i) => [o, P.scores[i][0]]).sort((a, b) => b[1] - a[1]).map(x => x[0]).filter(o => mx.outs.includes(o)), ...mx.outs.filter(o => !P.outs.includes(o)).sort(byName)]
+    : mx.outs.slice().sort(byName);
+  const cols = (P ? [...P.cols.map((r, j) => [r, P.load[j][0]]).sort((a, b) => b[1] - a[1]).map(x => x[0]), ...rows.filter(r => !P.cols.includes(r)).sort(byScore)]
+    : rows.slice().sort(byScore)).filter(r => outs.some(o => mx.cell.has(o + "|" + r.k)));
+  drawPcHeat(cols, outs, mx, lab, !!P);
+  drawPcPCA(P, lab);
+}
+
+function drawPcOver(rows) {
+  const box = $("pc-over"); box.innerHTML = "";
+  const rs = rows.filter(r => r.all.n >= S.minn).sort((a, b) => b.all.R - a.all.R);
+  if (!rs.length) { box.innerHTML = `<div class="empty">${L(`No candidate reaches ${S.minn} articles.`, `Aucun candidat n’atteint ${S.minn} articles.`)}</div>`; return; }
+  const W = Math.max(box.clientWidth - 8, 320), narrow = W < 560, rowH = 30, m = {l: narrow ? 132 : 190, r: narrow ? 56 : 84, t: narrow ? 44 : 30, b: 24}, H = m.t + m.b + rs.length * rowH;
+  let lo = Math.min(0, ...rs.map(r => r.all.R - Z() * r.all.se)), hi = Math.max(0, ...rs.map(r => r.all.R + Z() * r.all.se));
+  const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
+  const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": L(`${DIMS[S.dim].label} of each candidate`, `${DIMS[S.dim].label} de chaque candidat`)});
+  const grid = css("--grid"), zero = css("--zero"), fg = css("--fg"), fg2 = css("--fg2"), panel = css("--panel"), cf = new Intl.NumberFormat(LOC(), {notation: "compact"});
+  for (const v of niceTicks(lo, hi, narrow ? 4 : 6)) { const z = Math.abs(v) < 1e-12;
+    svg.append(el("line", {x1: X(v), x2: X(v), y1: m.t - 6, y2: H - m.b, stroke: z ? zero : grid, "stroke-width": z ? 1.25 : 1}));
+    svg.append(el("text", {x: X(v), y: H - m.b + 15, "text-anchor": "middle"}, z ? "0" : (v > 0 ? "+" : "−") + dec(+Math.abs(v).toFixed(3)))); }
+  svg.append(el("text", {class: "pole", x: m.l, y: 14}, `← ${DIMS[S.dim].neg}`));
+  svg.append(el("text", {class: "pole", x: W - m.r, y: narrow ? 30 : 14, "text-anchor": "end"}, `${DIMS[S.dim].pos} →`));
+  svg.append(el("text", {class: "pole", x: W - 4, y: narrow ? 30 : 14, "text-anchor": "end"}, narrow ? "" : "articles"));
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+  rs.forEach((r, i) => {
+    const y = m.t + i * rowH + rowH / 2, a = r.all;
+    if (i % 2 === 0) svg.append(el("rect", {x: 0, y: y - rowH / 2, width: W, height: rowH, fill: grid, "fill-opacity": 0.45}));
+    svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 5, "text-anchor": "end", style: "fill:var(--fg)"}, trunc(r.name, narrow ? 16 : 24)));
+    svg.append(el("text", {x: W - 4, y: y + 4, "text-anchor": "end"}, cf.format(a.n)));
+    if (S.ci) svg.append(el("line", {x1: X(a.R - 1.96 * a.se), x2: X(a.R + 1.96 * a.se), y1: y, y2: y, stroke: fg2, "stroke-width": 2, "stroke-opacity": 0.55, "stroke-linecap": "round"}));
+    svg.append(el("circle", {cx: X(a.R), cy: y, r: 5, fill: fg, stroke: panel, "stroke-width": 2}));
+    const hit = el("rect", {x: 0, y: y - rowH / 2, width: W, height: rowH, fill: "transparent"});
+    const show = ev => { const br = box.getBoundingClientRect();
+      tipAt(box, tip, ev.clientX - br.left, ev.clientY - br.top, `<b>${esc(r.name)}</b><div class="r"><i style="background:${fg}"></i><span>${DIMS[S.dim].label}</span><span class="v">${fmt(a.R)} ± ${dec((1.96 * a.se).toFixed(3))}</span>` +
+        `<span class="n">${nf.format(a.n)} articles · ${L(`${r.by.size} newspapers with ${S.minn}+`, `${r.by.size} journaux avec ${S.minn}+`)}</span></div>`); };
+    hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
+    svg.append(hit);
+  });
+  box.append(svg, tip);
+}
+
+function drawPcHeat(cols, outs, mx, lab, ordered) {
+  const box = $("pc-heat"); box.innerHTML = "";
+  if (!outs.length || !cols.length) { box.innerHTML = `<div class="empty">${L(`No newspaper reaches ${S.minn} articles on two candidates or more.`, `Aucun journal n’atteint ${S.minn} articles sur deux candidats ou plus.`)}</div>`; $("pc-heat-sub").textContent = ""; return; }
+  const abs = [...mx.cell.values()].map(c => Math.abs(c.v)).sort((a, b) => a - b), vmax = abs[Math.floor(abs.length * 0.95)] || abs[abs.length - 1] || 0.01;
+  const avail = Math.max(box.clientWidth - 8, 320), narrow = avail < 560, m = {l: narrow ? 112 : 170, r: 64, t: 78, b: 6}, rowH = 24;
+  const cw = Math.max(narrow ? 40 : 46, (avail - m.l - m.r) / cols.length), W = m.l + m.r + cw * cols.length, H = m.t + m.b + rowH * outs.length;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, width: W, role: "img", "aria-label": L("Candidates by newspaper", "Candidats par journal")});
+  svg.style.width = W + "px"; svg.style.maxWidth = "none";
+  const pos = css("--hpos"), neg = css("--hneg"), grid = css("--grid"), panel = css("--panel"), fg = css("--fg");
+  cols.forEach((r, j) => { const x = m.l + (j + 0.5) * cw;
+    svg.append(el("text", {class: "ch", x, y: m.t - 10, transform: `rotate(-35 ${x} ${m.t - 10})`}, trunc(surname(r.name), 16))); });
+  outs.forEach((o, i) => {
+    const y = m.t + i * rowH;
+    svg.append(el("rect", {x: m.l, y: y + 1, width: cw * cols.length, height: rowH - 2, fill: grid, "fill-opacity": 0.5}));
+    svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 16, "text-anchor": "end"}, trunc(oname(S.outlets[o]), narrow ? 13 : 22)));
+    cols.forEach((r, j) => { const c = mx.cell.get(o + "|" + r.k); if (!c) return;
+      const al = 0.1 + 0.9 * Math.min(1, Math.abs(c.v) / vmax), x = m.l + j * cw;
+      svg.append(el("rect", {x: x + 0.5, y: y + 1, width: cw - 1, height: rowH - 2, rx: 2, fill: c.v >= 0 ? pos : neg, "fill-opacity": al.toFixed(3)}));
+      svg.append(el("text", {class: "cv" + (Math.abs(c.v) > 1.96 * c.se ? " sig" : ""), x: x + cw / 2, y: y + 16, "text-anchor": "middle", style: `fill:${al > 0.62 ? panel : fg}`}, fmt2(c.v))); });
+  });
+  const hit = el("rect", {x: m.l, y: m.t, width: cw * cols.length, height: rowH * outs.length, fill: "transparent"}); svg.append(hit);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+  const show = ev => {
+    const r0 = svg.getBoundingClientRect(), sx = (ev.clientX - r0.left) * W / r0.width, sy = (ev.clientY - r0.top) * H / r0.height;
+    const o = outs[Math.floor((sy - m.t) / rowH)], r = cols[Math.floor((sx - m.l) / cw)], c = o != null && r ? mx.cell.get(o + "|" + r.k) : null;
+    if (!c) { tip.hidden = true; return; }
+    const br = box.getBoundingClientRect(), what = PC.mode === "gap" ? L("Gap with the other papers", "Écart avec les autres journaux") : PC.mode === "net" ? L("Net of paper and candidate", "Net du journal et du candidat") : DIMS[S.dim].label;
+    tipAt(box, tip, ev.clientX - br.left + box.scrollLeft, ev.clientY - br.top, `<b>${esc(oname(S.outlets[o]))} · ${esc(r.name)}</b>` +
+      `<div class="r"><i style="background:${c.v >= 0 ? pos : neg}"></i><span>${what}</span><span class="v">${fmt(c.v)} ± ${dec((1.96 * c.se).toFixed(3))}</span></div>` +
+      (PC.mode !== "raw" ? `<div class="r"><i></i><span>${DIMS[S.dim].label}</span><span class="v">${fmt(c.R)}</span></div>` : "") +
+      `<div class="r"><i></i><span class="n">${nf.format(c.n)} articles${c.nOther != null ? L(` here, ${nf.format(c.nOther)} in the other papers`, ` ici, ${nf.format(c.nOther)} dans les autres journaux`) : ""}</span></div>`);
+  };
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
+  box.append(svg, tip);
+  const D = DIMS[S.dim], lbl = PC.mode === "raw" ? [D.neg, D.pos] : [L(`${D.neg}, relatively`, `${D.neg}, relativement`), L(`${D.pos}, relatively`, `${D.pos}, relativement`)];
+  const how = PC.mode === "gap"
+    ? L(`Each cell: the candidate’s ${D.label.toLowerCase()} in that newspaper minus their ${D.label.toLowerCase()} in all the other selected newspapers together. Above 0: ${D.pos}, more here than elsewhere.`,
+        `Chaque case : ${D.label.toLowerCase()} du candidat dans ce journal moins sa ${D.label.toLowerCase()} dans tous les autres journaux sélectionnés réunis. Au-dessus de 0 : ${D.pos}, plus ici qu’ailleurs.`)
+    : PC.mode === "net"
+    ? L(`Each cell: what is left of the score once the newspaper’s overall tone and the candidate’s overall score are taken out (additive fit). Above 0: ${D.pos}, more than this paper’s tone and this candidate’s coverage elsewhere would predict.`,
+        `Chaque case : ce qui reste du score une fois retirés le ton d’ensemble du journal et le score d’ensemble du candidat (ajustement additif). Au-dessus de 0 : ${D.pos}, plus que ne le prévoiraient le ton de ce journal et le traitement du candidat ailleurs.`)
+    : L(`Each cell: the candidate’s ${D.label.toLowerCase()} in that newspaper.`, `Chaque case : ${D.label.toLowerCase()} du candidat dans ce journal.`);
+  $("pc-heat-sub").innerHTML = `<span class="legend">${esc(lbl[0])} <span class="bar" style="background:linear-gradient(90deg, ${neg}, ${grid} 50%, ${pos})"></span> ${esc(lbl[1])}</span>` +
+    `<span style="display:block;margin-top:6px">${esc(lab)} · ${esc(how)} ${esc(L(`Bold: the 95% interval excludes 0. Blank: under ${S.minn} articles. The strongest colour is ±${dec(vmax.toFixed(3))}.`,
+      `En gras : l’intervalle à 95 % exclut 0. Vide : moins de ${S.minn} articles. La couleur la plus forte vaut ±${dec(vmax.toFixed(3))}.`))}` +
+    (ordered ? " " + esc(L("Rows and columns follow the first axis of the map below.", "Lignes et colonnes suivent le premier axe de la carte ci-dessous.")) : "") + `</span>`;
+}
+
+function drawPcPCA(P, lab) {
+  const box = $("pc-pca"); box.innerHTML = "";
+  if (!P) { box.innerHTML = `<div class="empty">${L(`Too few newspapers with ${S.minn}+ articles on at least three candidates to draw the map. Widen the period, add newspapers, or lower « Hide points under ».`,
+    `Trop peu de journaux avec ${S.minn} articles ou plus sur au moins trois candidats pour dresser la carte. Élargissez la période, ajoutez des journaux ou baissez « Masquer les points sous ».`)}</div>`; $("pc-pca-sub").textContent = ""; return; }
+  // a map needs room: on a phone it scrolls sideways rather than shrink
+  const W = Math.max(box.clientWidth - 8, 600), narrow = false, H = Math.round(Math.min(Math.max(W * 0.62, 380), 620)), m = {l: 16, r: 16, t: 16, b: 16};
+  const smax = Math.max(...P.scores.map(s => Math.hypot(s[0], s[1]))) || 1, lmax = Math.max(...P.load.map(l => Math.hypot(l[0], l[1]))) || 1, f = 0.9 * smax / lmax;
+  const pts = [...P.scores, ...P.load.map(l => [l[0] * f, l[1] * f])];
+  const ex = Math.max(...pts.map(p => Math.abs(p[0]))) * 1.25 || 1, ey = Math.max(...pts.map(p => Math.abs(p[1]))) * 1.15 || 1;
+  const sc = Math.min((W - m.l - m.r) / (2 * ex), (H - m.t - m.b) / (2 * ey)), cx = W / 2, cy = H / 2;   // same scale on both axes
+  const X = x => cx + x * sc, Y = y => cy - y * sc;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": L("Principal component map of the newspapers", "Carte en composantes principales des journaux")});
+  if (W > box.clientWidth - 8) { svg.style.width = W + "px"; svg.style.maxWidth = "none"; }
+  const zero = css("--zero"), fg2 = css("--fg2"), s1 = css("--s1"), panel = css("--panel");
+  const defs = el("defs"), mk = el("marker", {id: "pc-arrow", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse"});
+  mk.append(el("path", {d: "M0,0 L10,5 L0,10 z", fill: fg2})); defs.append(mk); svg.append(defs);
+  svg.append(el("line", {x1: m.l, x2: W - m.r, y1: cy, y2: cy, stroke: zero, "stroke-dasharray": "3 4"}));
+  svg.append(el("line", {x1: cx, x2: cx, y1: m.t, y2: H - m.b, stroke: zero, "stroke-dasharray": "3 4"}));
+  const pct = x => dec((100 * x).toFixed(0));
+  svg.append(el("text", {class: "pole", x: W - m.r, y: cy + 16, "text-anchor": "end"}, L(`axis 1 · ${pct(P.expl[0])}%`, `axe 1 · ${pct(P.expl[0])} %`)));
+  svg.append(el("text", {class: "pole", x: cx + 6, y: m.t + 10}, L(`axis 2 · ${pct(P.expl[1])}%`, `axe 2 · ${pct(P.expl[1])} %`)));
+  // labels avoid each other greedily
+  const boxes = [], cw = narrow ? 6.2 : 6.8;
+  const clash = b => boxes.some(a => b.x < a.x + a.w && a.x < b.x + b.w && b.y < a.y + a.h && a.y < b.y + b.h);
+  const place = (x, y, text, tries) => { const w = text.length * cw, h = 14;
+    for (const [dx, dy, an] of tries) { const bx = an === "end" ? x + dx - w : an === "middle" ? x + dx - w / 2 : x + dx, b = {x: bx, y: y + dy - 11, w, h};
+      if (!clash(b) && bx >= 0 && bx + w <= W) { boxes.push(b); return {x: x + dx, y: y + dy, an}; } }
+    const [dx, dy, an] = tries[0]; return {x: x + dx, y: y + dy, an}; };
+  P.scores.forEach(s => boxes.push({x: X(s[0]) - 5, y: Y(s[1]) - 5, w: 10, h: 10}));
+  P.cols.forEach((r, j) => { const [a, b] = P.load[j], x = X(a * f), y = Y(b * f), len = Math.hypot(x - cx, y - cy) || 1;
+    svg.append(el("line", {x1: cx, y1: cy, x2: x, y2: y, stroke: fg2, "stroke-width": 1.5, "marker-end": "url(#pc-arrow)"}));
+    const ux = (x - cx) / len, uy = (y - cy) / len, an = ux >= 0 ? "start" : "end", t = surname(r.name);
+    const p = place(x + ux * 6, y + uy * 6 + 4, t, [[0, 0, an], [0, -12, an], [0, 12, an], [0, -24, an], [0, 24, an]]);
+    svg.append(el("text", {class: "pcv", x: p.x, y: p.y, "text-anchor": p.an}, t)); });
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+  P.outs.forEach((o, i) => { const [a, b] = P.scores[i], x = X(a), y = Y(b), t = trunc(oname(S.outlets[o]), narrow ? 14 : 22);
+    svg.append(el("circle", {cx: x, cy: y, r: 4.5, fill: s1, stroke: panel, "stroke-width": 1.5}));
+    const p = place(x, y, t, [[8, 4, "start"], [-8, 4, "end"], [0, -9, "middle"], [0, 17, "middle"], [8, -8, "start"], [8, 16, "start"], [-8, -8, "end"], [-8, 16, "end"]]);
+    svg.append(el("text", {class: "pcl", x: p.x, y: p.y, "text-anchor": p.an}, t));
+    const nm = P.M[i].filter(v => !Number.isFinite(v)).length, hit = el("circle", {cx: x, cy: y, r: 11, fill: "transparent"});
+    const show = ev => { const br = box.getBoundingClientRect();
+      tipAt(box, tip, ev.clientX - br.left, ev.clientY - br.top, `<b>${esc(oname(S.outlets[o]))}</b>` +
+        `<div class="r"><i style="background:${s1}"></i><span>${L("Axis 1", "Axe 1")}</span><span class="v">${fmt(a)}</span></div><div class="r"><i></i><span>${L("Axis 2", "Axe 2")}</span><span class="v">${fmt(b)}</span></div>` +
+        (nm ? `<div class="r"><i></i><span class="n">${L(`${nm} candidate${nm > 1 ? "s" : ""} under ${S.minn} articles, filled in`, `${nm} candidat${nm > 1 ? "s" : ""} sous ${S.minn} articles, complété${nm > 1 ? "s" : ""}`)}</span></div>` : "")); };
+    hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
+    svg.append(hit); });
+  box.append(svg, tip);
+  const D = DIMS[S.dim], two = pct(P.expl[0] + P.expl[1]);
+  $("pc-pca-sub").textContent = L(`${lab} · Each newspaper is placed by its ${D.label.toLowerCase()} scores for ${P.cols.length} candidates: newspapers close together treat the candidates alike. An arrow points toward the newspapers where that candidate is most « ${D.pos} ». The two axes keep ${two}% of the differences between newspapers.`,
+    `${lab} · Chaque journal est placé selon ses scores de ${D.label.toLowerCase()} pour ${P.cols.length} candidats : des journaux proches traitent les candidats de la même façon. Une flèche pointe vers les journaux où ce candidat est le plus « ${D.pos} ». Les deux axes retiennent ${two} % des écarts entre journaux.`) +
+    (PC.tone === "drop" ? " " + L("Each newspaper’s average over the candidates is taken out first, so the map shows whom a paper treats better or worse, not how harsh it is overall.",
+      "La moyenne de chaque journal sur l’ensemble des candidats est d’abord retirée : la carte montre qui un journal traite mieux ou moins bien, pas sa sévérité générale.") : "") +
+    (P.nMiss ? " " + L(`${P.nMiss} newspaper × candidate cells under ${S.minn} articles are filled in by iterative PCA.`, `${P.nMiss} cases journal × candidat sous ${S.minn} articles sont complétées par ACP itérative.`) : "");
+}
+$("pc-chips").addEventListener("click", e => { const b = e.target.closest(".ochip"); if (!b) return; const k = b.dataset.k; PC.on.has(k) ? PC.on.delete(k) : PC.on.add(k); render(); });
+$("pc-all").addEventListener("click", () => { PC.on = new Set(CANDS.map(c => c[0])); render(); });
+$("pc-per").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.months = +b.dataset.v; render(); });
+$("pc-mode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.mode = b.dataset.v; render(); });
+$("pc-tone").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.tone = b.dataset.v; render(); });
+// the six most covered candidates of the period, sent to « Over time »
+$("pc-follow").addEventListener("click", () => {
+  const top = PC.last.slice().sort((a, b) => b.all.n - a.all.n).slice(0, MAXP);
+  if (!top.length) return;
+  top.forEach(r => register(r.k, r.name, null)); S.sel = top.map(r => r.k);
+  goTab("time"); $("tabs").scrollIntoView({block: "start"});
+});
+
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
-const displayName = k => S.index.names[S.byKey.get(k)][1];
+const displayName = k => ent(k)[1];
 
 let token = 0;
 async function render() {
@@ -1043,15 +1604,26 @@ async function render() {
   renderChips();
   if (S.tab === "method") return;
   if (S.tab === "top") { drawRanking(); return; }
-  const data = (await Promise.all(S.sel.map(async k => ({k, d: await loadName(k)})))).filter(x => x.d);
+  if (S.tab === "pres") { drawPres(my); return; }
+  if (S.sel.some(k => !S.done.has(k))) $(S.tab === "corpora" ? "out-sub" : "time-sub").textContent = L("Loading from the API…", "Chargement depuis l’API…");
+  let data;
+  const ids = S.tab === "corpora" ? ["byout", "heat", "summary"] : ["timechart", "men"];
+  try { data = await whileBusy(ids, null, async () => {
+      const out = (await Promise.all(S.sel.map(async k => ({k, d: await loadName(k)})))).filter(x => x.d);
+      if (S.tab === "corpora" && S.adj) await loadBase().catch(() => {});   // its own error is reported below
+      return out; }); }
+  catch (e) { if (my === token) apiFail(e); return; }
   if (my !== token) return;
+  apiOk(); renderChips();   // display names arrive with the data
   const per = `${S.y0}–${S.y1}`, papers = S.oset ? L(", in the selected newspapers", ", dans les journaux sélectionnés") : L(", all newspapers", ", tous les journaux");
   if (S.tab === "corpora") {
     if (!data.length) { for (const id of ["byout", "heat", "summary"]) $(id).innerHTML = `<div class="empty">${L("Add a person above to compare newspapers.", "Ajoutez une personne ci-dessus pour comparer les journaux.")}</div>`;
       for (const id of ["out-sub", "heat-sub", "sum-sub"]) $(id).textContent = ""; $("heat-who").hidden = true; return; }
     $("sum-sub").textContent = per + papers;
-    if (S.adj) { try { await loadRanking(); baseSums(); } catch (e) { S.adj = false; setSeg("adj", "raw"); } if (my !== token) return; }
+    let baseErr = null;
+    if (S.adj) { try { await loadBase(); } catch (e) { baseErr = e.message; S.adj = false; setSeg("adj", "raw"); } if (my !== token) return; }
     drawOutlets(data); drawHeat(data); drawSummary(data);
+    if (baseErr) $("out-sub").textContent += " " + L(`Relative scores are unavailable (${baseErr}): raw scores shown.`, `Scores relatifs indisponibles (${baseErr}) : scores bruts affichés.`);
     if (S.adj) { if ($("out-sub").textContent) $("out-sub").textContent += " " + ADJ_NOTE();
       if ($("heat-sub").innerHTML) $("heat-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
       $("sum-sub").textContent += ". " + ADJ_NOTE(); }
@@ -1089,7 +1661,7 @@ async function render() {
     `${per} · ${DIMS[S.dim].label} : score dans les journaux sélectionnés moins le score de la même personne dans tous les autres journaux, chaque année${S.ci ? ", avec intervalles à 95 %" : ""}. Au-dessus de 0 : ${DIMS[S.dim].pos}, plus ici qu’ailleurs. Une ligne plate signifie que la personne a évolué de la même façon partout.`);
   drawTime(data); drawMentions(data);
 }
-$("reshint").addEventListener("click", e => { if (e.target.closest("[data-act=all]")) setOutlets(new Set(S.outlets.map((_, i) => i))); });
+$("reshint").addEventListener("click", e => { if (e.target.closest("[data-act=all]")) setOutlets(new Set([...S.osel, ...availSet()])); });
 
 function setTab(t) {
   if (!TABS.includes(t)) t = "top";
@@ -1108,8 +1680,8 @@ $("tabs").addEventListener("keydown", e => {
 window.addEventListener("hashchange", () => setTab(location.hash.slice(1)));
 
 function renderChips() {
-  $("chips").innerHTML = S.sel.map((k, i) => { const e = S.index.names[S.byKey.get(k)];
-    return `<span class="chip"><i style="background:var(${SERIES[i]})"></i>${esc(e[1])} <small>${nf.format(e[2])}</small><button type="button" data-k="${esc(k)}" aria-label="${L("Remove", "Retirer")} ${esc(e[1])}">×</button></span>`; }).join("");
+  $("chips").innerHTML = S.sel.map((k, i) => { const e = ent(k);
+    return `<span class="chip"><i style="background:var(${SERIES[i]})"></i>${esc(e[1])} ${e[2] != null ? `<small>${nf.format(e[2])}</small>` : ""}<button type="button" data-k="${esc(k)}" aria-label="${L("Remove", "Retirer")} ${esc(e[1])}">×</button></span>`; }).join("");
   $("q").disabled = S.sel.length >= MAXP;
   $("q").placeholder = S.sel.length >= MAXP ? L("Remove a person to add another", "Retirez-en une pour en ajouter") : L("e.g. Mélenchon, Bardella, Darmanin…", "p. ex. Mélenchon, Bardella, Darmanin…");
 }
@@ -1126,24 +1698,38 @@ function search(q) {
     if (!toks.every(t => words.some(w => w.startsWith(t)))) continue;
     out.push(e); if (out.length >= 10) break;
   }
+  // any name can be looked up in the API, even one missing from the index
+  if (k.length >= 3 && !S.sel.includes(k) && !out.some(e => e[0] === k)) out.push([k, q.trim(), null, null, [], 1]);
   return out;
 }
 function showSugg() {
   const ul = $("suggest"), q = $("q");
   if (!sugg.length) { ul.hidden = true; q.setAttribute("aria-expanded", "false"); if (q.value.trim()) { ul.innerHTML = `<li aria-disabled="true"><span class="alt">${L("No name in 30+ articles matches", "Aucun nom présent dans 30 articles ou plus ne correspond")}</span></li>`; ul.hidden = false; } return; }
-  ul.innerHTML = sugg.map((e, i) => `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${esc(e[1])}${e[4].length ? ` <span class="alt">· ${esc(e[4][0].replace(/ /g, " "))}</span>` : ""}</span><span class="n">${nf.format(e[2])} art.</span></li>`).join("");
+  ul.innerHTML = sugg.map((e, i) => e[5] ? `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${L("Look up", "Chercher")} « ${esc(e[1])} »</span><span class="n">${L("every name", "tous les noms")}</span></li>` : `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${esc(e[1])}${e[4].length ? ` <span class="alt">· ${esc(e[4][0].replace(/ /g, " "))}</span>` : ""}</span><span class="n">${nf.format(e[2])} art.</span></li>`).join("");
   ul.hidden = false; q.setAttribute("aria-expanded", "true");
   if (active >= 0) q.setAttribute("aria-activedescendant", "opt" + active); else q.removeAttribute("aria-activedescendant");
 }
-function pick(k) { if (!k || S.sel.includes(k) || S.sel.length >= MAXP) return; S.sel.push(k); $("q").value = ""; sugg = []; active = -1; showSugg(); render(); }
+function qmsg(t) { const m = $("qmsg"); m.textContent = t || ""; m.hidden = !t; clearTimeout(qmsg.t); if (t) qmsg.t = setTimeout(() => { m.hidden = true; }, 8000); }
+async function pick(k, label) {
+  if (!k || S.sel.includes(k) || S.sel.length >= MAXP) return;
+  $("q").value = ""; sugg = []; active = -1; showSugg();
+  if (!S.byKey.has(k)) {   // not in the index: ask the API first
+    const who = label || k; qmsg(L(`Looking up « ${who} »…`, `Recherche de « ${who} »…`));
+    let d; try { d = await loadName(k); } catch (e) { qmsg(L(`Could not get the data from the API (${e.message}).`, `Impossible d’obtenir les données de l’API (${e.message}).`)); return; }
+    if (!d) { qmsg(L(`No article names « ${who} ».`, `Aucun article ne nomme « ${who} ».`)); return; }
+    qmsg("");
+    if (S.sel.includes(k) || S.sel.length >= MAXP) return;
+  }
+  S.sel.push(k); render();
+}
 $("q").addEventListener("input", e => { sugg = search(e.target.value); active = sugg.length ? 0 : -1; showSugg(); });
 $("q").addEventListener("keydown", e => {
   if (e.key === "ArrowDown") { active = Math.min(active + 1, sugg.length - 1); showSugg(); e.preventDefault(); }
   else if (e.key === "ArrowUp") { active = Math.max(active - 1, 0); showSugg(); e.preventDefault(); }
-  else if (e.key === "Enter") { if (sugg[active]) pick(sugg[active][0]); e.preventDefault(); }
+  else if (e.key === "Enter") { if (sugg[active]) pick(sugg[active][0], sugg[active][1]); e.preventDefault(); }
   else if (e.key === "Escape") { sugg = []; showSugg(); }
 });
-$("suggest").addEventListener("pointerdown", e => { const li = e.target.closest("li[data-k]"); if (li) { e.preventDefault(); pick(li.dataset.k); } });
+$("suggest").addEventListener("pointerdown", e => { const li = e.target.closest("li[data-k]"); if (li) { e.preventDefault(); const x = sugg.find(s => s[0] === li.dataset.k); pick(li.dataset.k, x && x[1]); } });
 $("q").addEventListener("blur", () => setTimeout(() => { $("suggest").hidden = true; $("q").setAttribute("aria-expanded", "false"); }, 120));
 
 function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v))); }
@@ -1181,28 +1767,55 @@ $("yreset").addEventListener("click", () => setPeriod(S.Y0, S.Y1));
 
 const oname = o => OUTLET_NAMES[o] || o;
 const mainSet = () => new Set(MAIN.filter(o => S.outlets.includes(o)).map(o => S.outlets.indexOf(o)));
+// Newspapers offered: those with at least one picked section (a newspaper /newspapers_portraits did not list counts as having them all).
+// S.osel is what the user ticked, kept across section changes; S.oset is its part among the newspapers offered (null: all of them).
+const hasSec = o => { const ss = S.npSecs.get(S.outlets[o]); return !ss || [...S.secs].some(x => ss.has(x)); };
+const availSet = () => new Set(S.outlets.map((_, i) => i).filter(hasSec));
+function renderSChips() {
+  $("schips").innerHTML = S.secAll.map(x => `<button type="button" class="ochip" data-s="${esc(x)}" aria-pressed="${S.secs.has(x)}">${esc(secName(x))}</button>`).join("");
+  $("scount").textContent = L(`${S.secs.size} of ${S.secAll.length} selected`, `${S.secs.size} sur ${S.secAll.length} sélectionnées`);
+}
+function renderOChips() {
+  const av = availSet(), on = o => av.has(S.outlets.indexOf(o));
+  const main = MAIN.filter(o => S.outlets.includes(o) && on(o));
+  const rest = S.outlets.filter(o => !main.includes(o) && on(o)).sort((a, b) => oname(a).localeCompare(oname(b), "fr"));
+  $("ochips").innerHTML = [...main, ...rest].map(o => { const i = S.outlets.indexOf(o);
+    return `<button type="button" class="ochip" data-i="${i}" aria-pressed="${S.osel.has(i)}">${esc(oname(o))}</button>`; }).join("");
+}
+function refreshOutlets() {
+  if (!S.newOutlets) return; S.newOutlets = false;
+  renderSChips(); setOutlets(S.osel, false, false);
+}
 function outletUI() {
-  const main = MAIN.filter(o => S.outlets.includes(o));
-  const rest = S.outlets.filter(o => !main.includes(o)).sort((a, b) => oname(a).localeCompare(oname(b), "fr"));
-  $("ochips").innerHTML = [...main, ...rest].map(o => `<button type="button" class="ochip" data-i="${S.outlets.indexOf(o)}" aria-pressed="false">${esc(oname(o))}</button>`).join("");
+  S.secs = new Set([...S.secs].filter(x => S.secAll.includes(x)));
+  if (!S.secs.size) S.secs = new Set([S.secAll.includes("politique") ? "politique" : S.secAll[0]]);
+  renderSChips();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_OUT) || "null"); } catch (e) {}
   const init = Array.isArray(saved) ? new Set(saved.filter(o => S.outlets.includes(o)).map(o => S.outlets.indexOf(o)))
-    : main.length ? mainSet() : new Set(S.outlets.map((_, i) => i));
+    : MAIN.some(o => S.outlets.includes(o)) ? mainSet() : new Set(S.outlets.map((_, i) => i));
   setOutlets(init, false, false);
 }
 function setOutlets(on, save = true, draw = true) {
-  document.querySelectorAll("#ochips .ochip").forEach(b => b.setAttribute("aria-pressed", String(on.has(+b.dataset.i))));
-  S.oset = on.size === S.outlets.length ? null : new Set(on);
-  $("ocount").textContent = L(`${on.size} of ${S.outlets.length} selected`, `${on.size} sur ${S.outlets.length} sélectionnés`);
-  if (save) try { localStorage.setItem(LS_OUT, JSON.stringify([...on].map(i => S.outlets[i]))); } catch (e) {}
+  S.osel = new Set(on);
+  const av = availSet(), eff = new Set([...S.osel].filter(i => av.has(i)));
+  S.oset = eff.size === av.size ? null : eff;
+  renderOChips();
+  $("ocount").textContent = L(`${eff.size} of ${av.size} selected`, `${eff.size} sur ${av.size} sélectionnés`);
+  if (save) try { localStorage.setItem(LS_OUT, JSON.stringify([...S.osel].map(i => S.outlets[i]))); } catch (e) {}
   if (draw) render();
 }
-const curOutlets = () => S.oset ? new Set(S.oset) : new Set(S.outlets.map((_, i) => i));
+const curOutlets = () => new Set(S.osel);
 $("ochips").addEventListener("click", e => { const b = e.target.closest(".ochip"); if (!b) return;
   const on = curOutlets(), i = +b.dataset.i; on.has(i) ? on.delete(i) : on.add(i); setOutlets(on); });
-$("o-all").addEventListener("click", () => setOutlets(new Set(S.outlets.map((_, i) => i))));
-$("o-none").addEventListener("click", () => setOutlets(new Set()));
-$("o-main").addEventListener("click", () => setOutlets(mainSet()));
+// All / None / Main ten act on the newspapers offered and leave the others ticked or not
+$("o-all").addEventListener("click", () => setOutlets(new Set([...S.osel, ...availSet()])));
+$("o-none").addEventListener("click", () => { const av = availSet(); setOutlets(new Set([...S.osel].filter(i => !av.has(i)))); });
+$("o-main").addEventListener("click", () => { const av = availSet(); setOutlets(new Set([...[...S.osel].filter(i => !av.has(i)), ...[...mainSet()].filter(i => av.has(i))])); });
+$("schips").addEventListener("click", e => { const b = e.target.closest(".ochip"); if (!b) return;
+  const n = new Set(S.secs), x = b.dataset.s; n.has(x) ? n.delete(x) : n.add(x);
+  if (!n.size) return;   // at least one section
+  S.secs = n; try { localStorage.setItem(LS_SEC, JSON.stringify([...n])); } catch (er) {}
+  renderSChips(); setOutlets(S.osel, false); });
 
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(render, 150); });
 const mq = matchMedia("(prefers-color-scheme: dark)"); mq.addEventListener?.("change", render);
@@ -1215,8 +1828,8 @@ function setTheme(t, save = true) {
 (() => { let t = "light"; try { const v = localStorage.getItem("pp-theme"); if (v === "dark" || v === "light") t = v; } catch (e) {} setTheme(t, false); })();
 $("theme").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setTheme(b.dataset.v); });
 
-const LOAD_ERR = () => L(`The data could not be loaded (${S.loadErr}). Reload the page to try again.`,
-  `Les données n’ont pas pu être chargées (${S.loadErr}). Rechargez la page pour réessayer.`);
+const statusText = () => S.noIndex ? L(`No name index (${S.noIndex}): the search looks names up directly in the API.`, `Pas d’index des noms (${S.noIndex}) : la recherche interroge directement l’API.`)
+  : L(`${nf.format(S.nNames)} names indexed.`, `${nf.format(S.nNames)} noms indexés.`);
 const FR = {
   "Le Monde 1944–2026 · politics sections of 32 French news sites 2008–2026": "Le Monde 1944–2026 · rubriques politiques de 32 sites d’information français 2008–2026",
   "Ngramsci: measuring how political figures are portrayed and framed in 40 media outlets, since 1945": "Ngramsci : mesure de la représentation et du cadrage des personnalités politiques dans 40 médias, depuis 1945",
@@ -1240,43 +1853,80 @@ const FR = {
   "Our main tool: BERT": "L’outil principal : BERT", "Computing the scores": "Le calcul des scores", "How the models are trained": "Méthode d’entraînement des modèles", "Code and models": "Code et modèles", "Loading the name index…": "Chargement de l’index des noms…",
   "Views": "Vues", "Light theme": "Thème clair", "Dark theme": "Thème sombre", "Filters": "Filtres", "From year": "Année de début", "To year": "Année de fin",
   "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "What do the scores mean?": "Que mesurent ces scores ?", "Hide": "Masquer", "Raw": "Bruts", "Gap with other papers": "Écart avec les autres journaux", "Relative to each paper": "Relatifs à chaque journal", "Rank people by": "Classer les personnes par",
-  "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée"};
+  "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée",
+  "Sections": "Rubriques", "2027 presidential": "Présidentielle 2027", "Candidates": "Candidats", "Campaign period": "Période de campagne",
+  "3 months": "3 mois", "6 months": "6 mois", "12 months": "12 mois", "24 months": "24 mois",
+  "Follow these candidates over time": "Suivre ces candidats dans le temps", "Overall score of each candidate": "Score d’ensemble de chaque candidat",
+  "Contrasts between newspapers": "Contrastes entre journaux", "Net of paper and candidate": "Net du journal et du candidat", "Contrast shown": "Contraste affiché",
+  "Map of the newspapers (PCA)": "Carte des journaux (ACP)", "Each paper’s overall tone": "Ton d’ensemble de chaque journal", "Kept": "Gardé", "Removed": "Retiré"};
 const STATIC = [];
 function collectStatic() {
-  const skip = new Set(["SCRIPT", "STYLE", "svg"]), dyn = el => el.closest("[data-l], #rank, #byout, #heat, #timechart, #men, #summary, #chips, #ochips, #suggest, #ttable, #demo, #lang, .chart");
+  const skip = new Set(["SCRIPT", "STYLE", "svg"]), dyn = el => el.closest("[data-l], #schips, #scount, #pc-chips, #pc-range, #qmsg, #rank, #byout, #heat, #timechart, #men, #summary, #chips, #ochips, #suggest, #ttable, #demo, #lang, .chart");
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n; (n = w.nextNode());) { const t = n.nodeValue.trim(); if (t && FR[t] && !skip.has(n.parentNode.nodeName) && !dyn(n.parentNode)) STATIC.push([n, n.nodeValue, t]); }
   document.querySelectorAll("[aria-label]").forEach(e => { const t = e.getAttribute("aria-label"); if (FR[t] && !dyn(e)) STATIC.push([e, t, t, "aria"]); });
 }
 function applyLang() {
   document.documentElement.lang = LANG; DIMS = DIMS_ALL[LANG]; EXT = EXT_ALL[LANG]; nf = new Intl.NumberFormat(LOC());
-  OUTLET_NAMES.lemonde_autres = L("Le Monde · other sections", "Le Monde · autres rubriques");
   for (const [n, orig, t, kind] of STATIC) { const v = LANG === "fr" ? FR[t] : t;
     if (kind === "aria") n.setAttribute("aria-label", v); else n.nodeValue = orig.replace(t, v); }
   document.title = "Ngramsci";
   document.querySelectorAll("#lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === LANG)));
   document.querySelectorAll("#ochips .ochip").forEach(b => b.textContent = oname(S.outlets[+b.dataset.i]));
-  if (S.index) { setOutlets(curOutlets(), false, false); $("status").textContent = L(`${nf.format(S.nNames)} names indexed.`, `${nf.format(S.nNames)} noms indexés.`); }
-  if (S.loadErr) { $("demo").textContent = LOAD_ERR(); $("status").textContent = LOAD_ERR(); }
+  if (S.index) { renderSChips(); setOutlets(curOutlets(), false, false); $("status").textContent = statusText(); }
+  showBanner();
 }
 $("lang").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.dataset.v === LANG) return;
   LANG = b.dataset.v; try { localStorage.setItem("pp-lang", LANG); } catch (er) {} applyLang(); render(); });
 collectStatic(); applyLang();
 function start(ix) {
-  S.index = ix; S.outlets = ix.outlets; ix.names.forEach((e, i) => S.byKey.set(e[0], i));
+  S.index = ix; if (!S.outlets.length) S.outlets = Object.keys(OUTLET_NAMES); ix.names.forEach((e, i) => S.byKey.set(e[0], i));
   if (ix.years) { [S.Y0, S.Y1] = ix.years; S.y0 = Math.min(Math.max(2008, S.Y0), S.Y1); S.y1 = S.Y1; }   // opens on 2008- (web press); « Full period » gives 1944-
   for (const id of ["y0", "y1"]) { $(id).min = S.Y0; $(id).max = S.Y1; }
   $("y0").value = S.y0; $("y1").value = S.y1; syncYr();
   outletUI();
-  S.sel = DEFAULT.filter(k => S.byKey.has(k));
-  S.nNames = ix.names.length; $("status").textContent = L(`${nf.format(ix.names.length)} names indexed.`, `${nf.format(ix.names.length)} noms indexés.`);
+  S.sel = S.noIndex ? DEFAULT.slice() : DEFAULT.filter(k => S.byKey.has(k));
+  S.nNames = ix.names.length; $("status").textContent = statusText();
   setTab(location.hash.slice(1));
 }
-getJSON(DATA + "index.json").then(start).catch(err => {
-  S.loadErr = err.message;
-  $("demo").hidden = false; $("demo").textContent = LOAD_ERR(); $("status").textContent = LOAD_ERR();
-  for (const id of ["rank", "timechart", "byout"]) $(id).innerHTML = `<div class="empty">${LOAD_ERR()}</div>`;
-  $("rk-sub").textContent = "";
+// Start-up: /newspapers_portraits gives the newspapers and their sections; /names_portrait feeds the search box
+// (site/index.json is a fallback; without either, names are looked up in the API one by one).
+const NAMES_URL = API_ROOT + "/names_portrait", NEWS_URL = API_ROOT + "/newspapers_portraits";
+async function fetchText(u) { const r = await fetch(u); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); }
+// CSV "newspaper,sections", the sections comma-separated inside one quoted field
+async function loadNewspapers() {
+  const rows = parseCSV(await fetchText(NEWS_URL)), h = rows[0].map(x => x.trim().toLowerCase()), ni = h.indexOf("newspaper"), si = h.indexOf("sections");
+  if (ni < 0 || si < 0) throw new Error(`newspapers_portraits has no newspaper / sections column (${rows[0].join(", ")})`);
+  const all = new Set();
+  for (const r of rows.slice(1)) { const np = (r[ni] || "").trim(); if (!np) continue;
+    const ss = new Set((r[si] || "").split(",").map(x => x.trim()).filter(Boolean)); ss.forEach(x => all.add(x));
+    S.outlets.push(np); S.npSecs.set(np, ss); }
+  S.secAll = [...all].sort(secOrder);
+}
+// JSON ({names: [[key, name, n, …]]}, or a list of objects) or CSV with key, name/nom, n_articles[, first_month, last_month]
+function toIndex(t) {
+  t = t.trim(); let names, years = null;
+  if (t[0] === "{" || t[0] === "[") {
+    const j = JSON.parse(t), arr = Array.isArray(j) ? j : j.names || [];
+    names = arr.map(e => Array.isArray(e) ? e : [e.key, e.name || e.nom || titleOf(e.key), e.n_articles ?? e.n ?? null, null, []]);
+    if (j.years) years = j.years;
+  } else {
+    const rows = parseCSV(t), h = rows[0].map(x => x.trim().toLowerCase()), at = (...a) => a.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
+    const ki = at("key"), mi = at("name", "nom"), ai = at("n_articles", "n"), fi = at("first_month"), li = at("last_month");
+    if (ki < 0) throw new Error(`names_portrait has no key column (${rows[0].join(", ")})`);
+    const body = rows.slice(1).filter(r => r[ki]);
+    names = body.map(r => [r[ki], mi >= 0 && r[mi] ? r[mi] : titleOf(r[ki]), ai >= 0 && r[ai] !== "" ? +r[ai] : null, null, []]);
+    if (fi >= 0 && li >= 0) { let y0 = 1e4, y1 = 0; for (const r of body) { const f = +String(r[fi]).slice(0, 4), l = +String(r[li]).slice(0, 4); if (f && f < y0) y0 = f; if (l > y1) y1 = l; }
+      if (y1) years = [y0, y1]; }
+  }
+  names.sort((a, b) => (b[2] || 0) - (a[2] || 0));   // the search keeps the first matches: most covered first
+  return {names, years: years || [1944, new Date().getFullYear()]};
+}
+Promise.allSettled([fetchText(NAMES_URL).then(toIndex), loadNewspapers()]).then(([ix, np]) => {
+  if (np.status === "rejected") { console.warn("newspapers_portraits:", np.reason); S.outlets = []; S.npSecs = new Map(); }
+  if (ix.status === "fulfilled") return start(ix.value);
+  console.warn("names_portrait:", ix.reason);
+  getJSON(DATA + "index.json").then(start, () => { S.noIndex = ix.reason.message; start({names: [], years: [1944, new Date().getFullYear()]}); });
 });
 })();
 </script>
