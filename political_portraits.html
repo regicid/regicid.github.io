@@ -67,6 +67,7 @@ header { display: grid; gap: 6px; }
 .chip button:hover { background: var(--rule); }
 .hint { color: var(--muted); font-size: 14px; }
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.field > .seg { justify-self: start; }   /* a label wider than its buttons must not stretch the group */
 .seg button { border: 0; background: var(--bg); color: var(--fg2); font: 600 14px var(--f-body); padding: 7px 12px; cursor: pointer; }
 .seg button + button { border-left: 1px solid var(--rule); }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
@@ -256,7 +257,7 @@ details.cb .cbtext { white-space: normal; }
         <span class="flabel" id="o-label">Newspapers</span>
         <button type="button" class="tlink" id="o-all">All</button>
         <button type="button" class="tlink" id="o-none">None</button>
-        <button type="button" class="tlink" id="o-main">Main ten</button>
+        <button type="button" class="tlink" id="o-main">Main papers</button>
         <span class="ocount" id="ocount"></span>
       </div>
       <div class="ochips" id="ochips" role="group" aria-labelledby="o-label"></div>
@@ -310,6 +311,10 @@ details.cb .cbtext { white-space: normal; }
             <option value="2000">2,000 articles</option><option value="10000">10,000 articles</option></select></div>
         <div class="field" id="rk-off-f" data-tabs="top"><span>Mostly in other sections</span><div class="seg" id="rk-off" role="group" aria-label="People mostly covered in other sections">
             <button type="button" data-v="show" aria-pressed="true">Included</button><button type="button" data-v="hide" aria-pressed="false">Excluded</button></div></div>
+        <div class="field" data-tabs="corpora pres"><span>Heatmap colour</span><div class="seg" id="hcolor" role="group" aria-label="Heatmap colour">
+          <button type="button" data-v="sig" aria-pressed="true">Significance</button><button type="button" data-v="value" aria-pressed="false">Value</button></div></div>
+        <div class="field" data-tabs="pres"><span>Map axes</span><div class="seg" id="pc-rot" role="group" aria-label="Map axes">
+          <button type="button" data-v="varimax" aria-pressed="true">Varimax</button><button type="button" data-v="pca" aria-pressed="false">PCA</button></div></div>
         <div class="field" data-tabs="corpora time pres"><span>Hide points under</span>
         <select id="minn" aria-label="Minimum articles per point">
           <option value="5">5 articles</option><option value="10" selected>10 articles</option>
@@ -349,14 +354,20 @@ details.cb .cbtext { white-space: normal; }
   <div class="panel" id="p-corpora" role="tabpanel" aria-labelledby="tab-corpora" hidden>
     <section class="card" aria-labelledby="t-out">
       <div class="cardhead"><h2 id="t-out">By newspaper</h2>
+        <div class="row" style="gap:10px 16px">
+        <div class="field"><span>Show</span><div class="seg" id="o-mode" role="group" aria-label="Contrast shown">
+          <button type="button" data-v="gap" aria-pressed="true">Gap with other papers</button><button type="button" data-v="net" aria-pressed="false">Net of paper and person</button><button type="button" data-v="raw" aria-pressed="false">Score</button></div></div>
         <div class="field"><span>Order newspapers by</span><div class="seg" id="osort" role="group" aria-label="Order newspapers by">
-          <button type="button" data-v="score" aria-pressed="true">Score</button><button type="button" data-v="n" aria-pressed="false">Articles</button><button type="button" data-v="name" aria-pressed="false">Name</button></div></div></div>
+          <button type="button" data-v="score" aria-pressed="true">Score</button><button type="button" data-v="n" aria-pressed="false">Articles</button><button type="button" data-v="name" aria-pressed="false">Name</button></div></div></div></div>
       <div class="sub" id="out-sub"></div>
-      <div class="chart" id="byout"></div>
+      <div class="chart pc-fig" id="byout"></div>
     </section>
     <section class="card" aria-labelledby="t-heat">
       <div class="cardhead"><h2 id="t-heat">Newspaper by year</h2>
-        <div class="seg" id="heat-who" role="group" aria-label="Person shown"></div></div>
+        <div class="row" style="gap:10px 16px">
+        <div class="field"><span>Show</span><div class="seg" id="heat-mode" role="group" aria-label="Value shown">
+          <button type="button" data-v="raw" aria-pressed="true">Score</button><button type="button" data-v="year" aria-pressed="false">Gap with other papers that year</button><button type="button" data-v="mean" aria-pressed="false">Gap with own average</button></div></div>
+        <div class="seg" id="heat-who" role="group" aria-label="Person shown"></div></div></div>
       <div class="sub" id="heat-sub"></div>
       <div class="chart heat-fig" id="heat"></div>
     </section>
@@ -553,7 +564,7 @@ const dec = x => LANG === "fr" ? String(x).replace(".", ",") : String(x);
 const plural = (n, en1, enN, fr1, frN) => n === 1 ? L(en1, fr1) : L(enN, frN);
 const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6"], MAXP = SERIES.length;
 const DEFAULT = ["emmanuel macron", "marine le pen", "jean luc melenchon"];
-const MAIN = ["lemonde", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "marianne", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
+const MAIN = ["lemonde", "le_figaro", "liberation", "mediapart", "leparisien", "les_echos", "valeurs_actuelles", "cnews", "le_nouvel_observateur"];
 const TABS = ["top", "corpora", "time", "pres", "method"];
 const LS_OUT = "pp-newspapers-v3", LS_SEC = "pp-sections";   // v3: Le Monde is one newspaper again, sections are a filter
 // Section labels (others are shown as they come); politics first, then alphabetical
@@ -575,7 +586,7 @@ function parseCSV(t) {
   for (let i = 0, n = t.length; i < n; i++) {
     const c = t[i];
     if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; continue; }
-    if (c === '"') q = true;
+    if (c === '"' && f === "") q = true;   // a quote opens a field only at its start; inside a bare field it is just a character
     else if (c === ",") { row.push(f); f = ""; }
     else if (c === "\n" || c === "\r") { if (c === "\r" && t[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
     else f += c;
@@ -694,7 +705,7 @@ let nf = new Intl.NumberFormat(LOC());
 
 const S = {index: null, byKey: new Map(), outlets: [], npSecs: new Map(), secAll: ["politique"], osel: new Set(),
   secs: (() => { try { const v = JSON.parse(localStorage.getItem(LS_SEC) || "null"); if (Array.isArray(v) && v.length) return new Set(v); } catch (e) {} return new Set(["politique"]); })(),
-  sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), done: new Set(), apiErr: null, tab: "top", heat: 0, osort: "score",
+  sel: [], dim: "valence", res: "year", minn: 10, oset: null, y0: 2008, y1: 2026, Y0: 1944, Y1: 2026, cache: new Map(), done: new Set(), apiErr: null, tab: "top", heat: 0, hmode: "raw", osort: "score",
   ci: (() => { try { return localStorage.getItem("pp-ci") !== "off"; } catch (e) { return true; } })(),
   adj: (() => { try { return localStorage.getItem("pp-adj") === "rel"; } catch (e) { return false; } })(),
   tgap: false};
@@ -936,62 +947,26 @@ function drawMentions(data) {
   hit.addEventListener("pointerleave", () => { if (!brushing()) { tip.hidden = true; cross.setAttribute("visibility", "hidden"); } });
 }
 function drawOutlets(data) {
-  const box = $("byout"); box.innerHTML = "";
+  const box = $("byout"); box.innerHTML = ""; setSeg("o-mode", PC.mode); setSeg("hcolor", PC.color);
   if (S.oset && !S.oset.size) { box.innerHTML = `<div class="empty">${L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")}</div>`; $("out-sub").textContent = ""; return; }
-  const per = data.map(({k, d}) => {
-    const idx = yearCells(d), g = groupBy(idx, j => d.y.o[idx[j]]), out = new Map();
-    for (const [o, js] of g) { const r = mergeP(k, d, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) out.set(o, r); }
-    return {k, out};
+  if (PC.mode === "net" && data.length < 2) { box.innerHTML = `<div class="empty">${L("« Net of paper and person » needs at least two people: with one, nothing is left once the paper and the person are taken out.", "« Net du journal et de la personne » demande au moins deux personnes : avec une seule, il ne reste rien une fois retirés le journal et la personne.")}</div>`; $("out-sub").textContent = ""; return; }
+  const rows = data.map(({k, d}) => {
+    const idx = yearCells(d), by = new Map();
+    for (const [o, js] of groupBy(idx, j => d.y.o[idx[j]])) { const r = mergeP(k, d, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) by.set(o, r); }
+    return {k, name: displayName(k), by, rest: o => mergeP(k, d, idx.filter(i => d.y.o[i] !== o), S.dim)};
   });
-  const os = [...new Set(per.flatMap(p => [...p.out.keys()]))];
-  if (!os.length) { box.innerHTML = `<div class="empty">${L(`No selected newspaper reaches ${S.minn} articles on these people in ${S.y0}–${S.y1}.`, `Aucun journal sélectionné n’atteint ${S.minn} articles sur ces personnes en ${S.y0}–${S.y1}.`)}</div>`; $("out-sub").textContent = ""; return; }
-  const first = per.find(p => p.out.size) || per[0];
-  const tot = o => per.reduce((a, p) => a + (p.out.get(o)?.n || 0), 0), oname = o => OUTLET_NAMES[S.outlets[o]] || S.outlets[o];
-  if (S.osort === "n") os.sort((a, b) => tot(b) - tot(a));
-  else if (S.osort === "name") os.sort((a, b) => oname(a).localeCompare(oname(b), "fr"));
-  else os.sort((a, b) => (first.out.get(b)?.R ?? -9) - (first.out.get(a)?.R ?? -9));
-  const W = Math.max(box.clientWidth - 8, 320), narrow = W < 560, rowH = Math.max(26, per.length * 6 + 10), m = {l: narrow ? 118 : 170, r: narrow ? 56 : 84, t: 30, b: 24};
-  const H = m.t + m.b + os.length * rowH;
-  const vals = per.flatMap(p => [...p.out.values()]);
-  let lo = Math.min(0, ...vals.map(r => r.R - Z() * r.se)), hi = Math.max(0, ...vals.map(r => r.R + Z() * r.se));
-  const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
-  const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${DIMS[S.dim].label} by newspaper`});
-  const grid = css("--grid"), zero = css("--zero"), cf = new Intl.NumberFormat(LOC(), {notation: "compact"});
-  for (const v of niceTicks(lo, hi, narrow ? 4 : 6)) {
-    svg.append(el("line", {x1: X(v), x2: X(v), y1: m.t - 6, y2: H - m.b, stroke: Math.abs(v) < 1e-12 ? zero : grid, "stroke-width": Math.abs(v) < 1e-12 ? 1.25 : 1}));
-    svg.append(el("text", {x: X(v), y: H - m.b + 15, "text-anchor": "middle"}, v === 0 ? "0" : (v > 0 ? "+" : "−") + dec(+Math.abs(v).toFixed(3))));
-  }
-  svg.append(el("text", {class: "pole", x: m.l, y: 14}, `← ${DIMS[S.dim].neg}`));
-  svg.append(el("text", {class: "pole", x: W - m.r, y: 14, "text-anchor": "end"}, `${DIMS[S.dim].pos} →`));
-  svg.append(el("text", {class: "pole", x: W - 4, y: 14, "text-anchor": "end"}, "articles"));
-  const off = per.map((_, i) => (i - (per.length - 1) / 2) * 6);
-  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
-  os.forEach((o, i) => {
-    const y = m.t + i * rowH + rowH / 2;
-    if (i % 2 === 0) svg.append(el("rect", {x: 0, y: y - rowH / 2, width: W, height: rowH, fill: grid, "fill-opacity": 0.45}));
-    svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 4, "text-anchor": "end"}, trunc(oname(o), narrow ? 14 : 22)));
-    svg.append(el("text", {x: W - 4, y: y + 4, "text-anchor": "end"}, cf.format(tot(o))));
-    per.forEach((p, pi) => {
-      const r = p.out.get(o); if (!r) return;
-      const col = css(SERIES[S.sel.indexOf(p.k)]), yy = y + off[pi];
-      if (S.ci) svg.append(el("line", {x1: X(r.R - 1.96 * r.se), x2: X(r.R + 1.96 * r.se), y1: yy, y2: yy, stroke: col, "stroke-width": 2, "stroke-opacity": 0.5, "stroke-linecap": "round"}));
-      svg.append(el("circle", {cx: X(r.R), cy: yy, r: 4.5, fill: col, stroke: css("--panel"), "stroke-width": 2}));
-    });
-    const hit = el("rect", {x: 0, y: y - rowH / 2, width: W, height: rowH, fill: "transparent"});
-    const show = ev => {
-      const rows = per.map(p => ({k: p.k, r: p.out.get(o)})).filter(x => x.r);
-      const br = box.getBoundingClientRect();
-      tipAt(box, tip, ev.clientX - br.left, ev.clientY - br.top,
-        `<b>${esc(oname(o))} · ${S.y0}–${S.y1}</b>` + rows.map(({k, r}) => `<div class="r"><i style="background:var(${SERIES[S.sel.indexOf(k)]})"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(r.R)} ± ${dec((1.96 * r.se).toFixed(3))}</span><span class="n">${nf.format(r.n)} articles</span></div>`).join(""));
-    };
-    hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show);
-    hit.addEventListener("pointerleave", () => { tip.hidden = true; });
-    svg.append(hit);
-  });
-  box.append(svg, tip);
-  const how = S.osort === "n" ? L("by articles", "par nombre d’articles") : S.osort === "name" ? L("by name", "par nom") : L(`by ${displayName(first.k)}’s score`, `selon le score de ${displayName(first.k)}`);
-  $("out-sub").textContent = L(`${S.y0}–${S.y1} · ${DIMS[S.dim].label}${S.ci ? " with 95% intervals" : ""}, ordered ${how}. A newspaper with fewer than ${S.minn} articles on a person is left out for that person.`, `${S.y0}–${S.y1} · ${DIMS[S.dim].label}${S.ci ? " avec intervalles à 95 %" : ""}, trié ${how}. Un journal qui compte moins de ${S.minn} articles sur une personne est omis pour elle.`);
+  const mx = heatMatrix(rows, PC.mode), first = rows.find(r => mx.outs.some(o => mx.cell.has(o + "|" + r.k))) || rows[0];
+  const outs = mx.outs.slice(), tot = o => rows.reduce((a, r) => a + (r.by.get(o)?.n || 0), 0), val = o => mx.cell.get(o + "|" + first.k)?.v ?? -Infinity;
+  if (S.osort === "n") outs.sort((a, b) => tot(b) - tot(a));
+  else if (S.osort === "name") outs.sort((a, b) => oname(S.outlets[a]).localeCompare(oname(S.outlets[b]), "fr"));
+  else outs.sort((a, b) => val(b) - val(a));
+  const cols = rows.filter(r => outs.some(o => mx.cell.has(o + "|" + r.k)));
+  const how = S.osort === "n" ? L("Rows: by number of articles.", "Lignes : par nombre d’articles.") : S.osort === "name" ? L("Rows: by name.", "Lignes : par nom.")
+    : L(`Rows: by ${first.name}’s column.`, `Lignes : dans l’ordre de la colonne « ${first.name} ».`);
+  drawHeatmap({box: "byout", sub: "out-sub", cols, outs, mx, lead: `${S.y0}–${S.y1}`, people: true, colName: r => trunc(r.name, 20), tail: how,
+    empty: PC.mode === "gap"
+      ? L(`No selected newspaper reaches ${S.minn} articles on these people in ${S.y0}–${S.y1} while the other papers do too.`, `Aucun journal sélectionné n’atteint ${S.minn} articles sur ces personnes en ${S.y0}–${S.y1} avec assez d’articles dans les autres journaux.`)
+      : L(`No selected newspaper reaches ${S.minn} articles on these people in ${S.y0}–${S.y1}.`, `Aucun journal sélectionné n’atteint ${S.minn} articles sur ces personnes en ${S.y0}–${S.y1}.`)});
 }
 
 // one person: newspapers in rows, years in columns, colour = score
@@ -1001,15 +976,24 @@ function drawHeat(data) {
   who.innerHTML = data.length > 1 ? data.map((x, i) => `<button type="button" data-i="${i}" aria-pressed="${i === S.heat}">${esc(trunc(displayName(x.k), 22))}</button>`).join("") : "";
   who.hidden = data.length < 2;
   if (S.oset && !S.oset.size) { box.innerHTML = `<div class="empty">${L("Pick at least one newspaper above.", "Choisissez au moins un journal ci-dessus.")}</div>`; $("heat-sub").textContent = ""; return; }
-  const {k, d} = data[S.heat], idx = yearCells(d), cells = new Map(), tot = new Map();
+  setSeg("heat-mode", S.hmode); setSeg("hcolor", PC.color);
+  const {k, d} = data[S.heat], idx = yearCells(d), cells = new Map(), tot = new Map(), mode = S.hmode;
+  // "mean": minus the person's own average over the period in the selected papers (takes out their level, keeps the trend);
+  // "year": minus the person's score the same year in the other selected papers (takes out the trend too: only the paper's own slant is left)
+  const own = mode === "mean" ? mergeP(k, d, idx, S.dim) : null;
   for (const [ck, js] of groupBy(idx, j => d.y.o[idx[j]] + "|" + d.y.year[idx[j]])) {
     const r = mergeP(k, d, js.map(j => idx[j]), S.dim); if (!r || r.n < S.minn) continue;
-    cells.set(ck, r); const o = +ck.split("|")[0]; tot.set(o, (tot.get(o) || 0) + r.n);
+    const c = {R: r.R, se: r.se, n: r.n, v: r.R, nOther: null}, [o, yr] = ck.split("|").map(Number);
+    if (mode === "year") {
+      const other = mergeP(k, d, idx.filter(i => d.y.year[i] === yr && d.y.o[i] !== o), S.dim); if (!other || other.n < S.minn) continue;
+      c.v = r.R - other.R; c.se = Math.hypot(r.se, other.se); c.nOther = other.n;
+    } else if (own) { c.v = r.R - own.R; c.se = Math.hypot(r.se, own.se); }
+    cells.set(ck, c); tot.set(o, (tot.get(o) || 0) + r.n);
   }
   if (!cells.size) { box.innerHTML = `<div class="empty">${L(`No newspaper-year reaches ${S.minn} articles on ${esc(displayName(k))} in ${S.y0}–${S.y1}.`, `Aucune case journal × année n’atteint ${S.minn} articles sur ${esc(displayName(k))} en ${S.y0}–${S.y1}.`)}</div>`; $("heat-sub").textContent = ""; return; }
   const os = [...tot.keys()].sort((a, b) => tot.get(b) - tot.get(a)), ys = [...cells.keys()].map(c => +c.split("|")[1]);
   const ya = Math.min(...ys), yb = Math.max(...ys), ny = yb - ya + 1;
-  const abs = [...cells.values()].map(r => Math.abs(r.R)).sort((a, b) => a - b), vmax = abs[Math.floor(abs.length * 0.95)] || abs[abs.length - 1] || 0.01;
+  const abs = [...cells.values()].map(r => Math.abs(r.v)).sort((a, b) => a - b), vmax = abs[Math.floor(abs.length * 0.95)] || abs[abs.length - 1] || 0.01;
   const avail = Math.max(box.clientWidth - 8, 320), narrow = avail < 560, m = {l: narrow ? 112 : 170, r: 8, t: 8, b: 26}, rowH = 20;
   const cw = Math.max(narrow ? 7 : 6, (avail - m.l - m.r) / ny), W = m.l + m.r + cw * ny, H = m.t + m.b + rowH * os.length;
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, width: W, role: "img", "aria-label": L(`${DIMS[S.dim].label} of ${displayName(k)} by newspaper and year`, `${DIMS[S.dim].label} de ${displayName(k)} par journal et par année`)});
@@ -1021,7 +1005,7 @@ function drawHeat(data) {
     svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 14, "text-anchor": "end"}, trunc(OUTLET_NAMES[S.outlets[o]] || S.outlets[o], narrow ? 13 : 22)));
     for (let yr = ya; yr <= yb; yr++) { const r = cells.get(o + "|" + yr); if (!r) continue;
       svg.append(el("rect", {x: m.l + (yr - ya) * cw + 0.5, y: y + 1, width: Math.max(cw - 1, 1), height: rowH - 2, rx: Math.min(2, cw / 4),
-        fill: r.R >= 0 ? pos : neg, "fill-opacity": (0.1 + 0.9 * Math.min(1, Math.abs(r.R) / vmax)).toFixed(3)})); }
+        fill: r.v >= 0 ? pos : neg, "fill-opacity": heatAlpha(r, vmax).toFixed(3)})); }
   });
   const step = ny * cw / 46 > 8 ? 5 : ny > 60 ? 10 : ny > 25 ? 5 : ny > 10 ? 2 : 1;
   for (let yr = ya; yr <= yb; yr++) if (yr % step === 0 || ny <= 3) {
@@ -1036,14 +1020,31 @@ function drawHeat(data) {
     const o = os[Math.floor((sy - m.t) / rowH)], yr = ya + Math.floor((sx - m.l) / cw), r = cells.get(o + "|" + yr);
     if (o == null || !r) { tip.hidden = true; return; }
     const br = box.getBoundingClientRect();
-    tipAt(box, tip, ev.clientX - br.left + box.scrollLeft, ev.clientY - br.top, `<b>${esc(OUTLET_NAMES[S.outlets[o]] || S.outlets[o])} · ${yr}</b>
-      <div class="r"><i style="background:${r.R >= 0 ? pos : neg}"></i><span>${esc(displayName(k))}</span><span class="v">${fmt(r.R)} ± ${dec((1.96 * r.se).toFixed(3))}</span><span class="n">${nf.format(r.n)} articles</span></div>`);
+    const what = mode === "year" ? L("Gap with the other papers", "Écart avec les autres journaux") : mode === "mean" ? L("Gap with own average", "Écart avec sa moyenne") : DIMS[S.dim].label, z = r.se > 0 ? r.v / r.se : 0;
+    tipAt(box, tip, ev.clientX - br.left + box.scrollLeft, ev.clientY - br.top, `<b>${esc(OUTLET_NAMES[S.outlets[o]] || S.outlets[o])} · ${yr} · ${esc(displayName(k))}</b>
+      <div class="r"><i style="background:${r.v >= 0 ? pos : neg}"></i><span>${what}</span><span class="v">${fmt(r.v)} ± ${dec((1.96 * r.se).toFixed(3))}</span></div>` +
+      `<div class="r"><i></i><span>z</span><span class="v">${dec(z.toFixed(1))}${Math.abs(z) >= 1.96 ? "" : L(" · not significant", " · non significatif")}</span></div>` +
+      (mode !== "raw" ? `<div class="r"><i></i><span>${DIMS[S.dim].label}</span><span class="v">${fmt(r.R)}</span></div>` : "") +
+      (mode === "mean" ? `<div class="r"><i></i><span>${L("Own average", "Sa moyenne")}</span><span class="v">${fmt(own.R)}</span></div>` : "") +
+      `<div class="r"><i></i><span class="n">${nf.format(r.n)} articles${r.nOther != null ? L(` here, ${nf.format(r.nOther)} in the other papers that year`, ` ici, ${nf.format(r.nOther)} dans les autres journaux cette année-là`) : ""}</span></div>`);
   };
   hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
   box.append(svg, tip);
-  $("heat-sub").innerHTML = `<span class="legend">${esc(DIMS[S.dim].neg)} <span class="bar" style="background:linear-gradient(90deg, ${neg}, ${grid} 50%, ${pos})"></span> ${esc(DIMS[S.dim].pos)}</span>` +
-    `<span style="display:block;margin-top:6px">${L(`${esc(displayName(k))}, ${DIMS[S.dim].label.toLowerCase()} each year in each newspaper; the strongest colour is ±${dec(vmax.toFixed(3))}. Blank cells have fewer than ${S.minn} articles.`, `${esc(displayName(k))} : ${DIMS[S.dim].label.toLowerCase()} chaque année dans chaque journal ; la couleur la plus forte vaut ±${dec(vmax.toFixed(3))}. Les cases vides comptent moins de ${S.minn} articles.`)}</span>`;
+  const D = DIMS[S.dim], dl = D.label.toLowerCase(), nm = esc(displayName(k)), lbl = mode === "raw" ? [D.neg, D.pos] : [L(`${D.neg}, relatively`, `${D.neg}, relativement`), L(`${D.pos}, relatively`, `${D.pos}, relativement`)];
+  const how = mode === "year"
+    ? L(`${nm}: each cell is their ${dl} in that newspaper minus their ${dl} the same year in all the other selected newspapers together, so the trend over time is taken out and only each paper’s own slant is left. Above 0: ${D.pos}, more here than elsewhere that year.`,
+        `${nm} : chaque case est sa ${dl} dans ce journal moins sa ${dl} la même année dans tous les autres journaux sélectionnés réunis ; la tendance dans le temps est retirée, il ne reste que le parti pris propre à chaque journal. Au-dessus de 0 : ${D.pos}, plus ici qu’ailleurs cette année-là.`)
+    : mode === "mean"
+    ? L(`${nm}: each cell is their ${dl} in that newspaper that year minus their own average over ${S.y0}–${S.y1} in the selected newspapers (${fmt(own.R)}), so their general level is taken out and the changes over time stand out. Above 0: ${D.pos}, more than usual.`,
+        `${nm} : chaque case est sa ${dl} dans ce journal cette année-là moins sa propre moyenne sur ${S.y0}–${S.y1} dans les journaux sélectionnés (${fmt(own.R)}) ; son niveau général est retiré et les évolutions ressortent. Au-dessus de 0 : ${D.pos}, plus que d’habitude.`)
+    : L(`${nm}, ${dl} each year in each newspaper.`, `${nm} : ${dl} chaque année dans chaque journal.`);
+  const colour = PC.color === "value"
+    ? L(`The strongest colour is ±${dec(vmax.toFixed(3))}.`, `La couleur la plus forte vaut ±${dec(vmax.toFixed(3))}.`)
+    : L(`Colour: how sure the value is (value ÷ standard error, z); pale: not significant at 95%, darkest: |z| ≥ ${Z_STRONG}.`, `Couleur : degré de certitude (valeur ÷ erreur type, z) ; pâle : non significatif à 95 %, le plus foncé : |z| ≥ ${Z_STRONG}.`);
+  $("heat-sub").innerHTML = `<span class="legend">${esc(lbl[0])} <span class="bar" style="background:linear-gradient(90deg, ${neg}, ${grid} 50%, ${pos})"></span> ${esc(lbl[1])}</span>` +
+    `<span style="display:block;margin-top:6px">${how} ${esc(colour)} ${esc(L(`Blank cells have fewer than ${S.minn} articles${mode === "year" ? ", or too few in the other papers that year" : ""}.`, `Les cases vides comptent moins de ${S.minn} articles${mode === "year" ? ", ou trop peu dans les autres journaux cette année-là" : ""}.`))}</span>`;
 }
+$("heat-mode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.hmode = b.dataset.v; render(); });
 $("heat-who").addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (!b) return; S.heat = +b.dataset.i; render(); });
 $("osort").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.osort = b.dataset.v; setSeg("osort", S.osort); render(); });
 
@@ -1095,7 +1096,7 @@ function drawSummary(data) {
 const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false,
   // off by default: the API only works out who is off-section when asked (section_flag=True), which is slower
   offHide: (() => { try { return localStorage.getItem("pp-off2") === "hide"; } catch (e) { return false; } })()};
-// off_section (from /rankings_portraits, else /names_portrait): either a flag (1/true) for people who belong elsewhere,
+// off_section (from /rankings_portraits, else /names_portraits): either a flag (1/true) for people who belong elsewhere,
 // or the section where the person is mostly covered, in which case they are off when that section is not picked.
 function offOf(v) {
   if (v == null) return null; const t = String(v).trim(); if (!t) return null;
@@ -1319,7 +1320,7 @@ const CANDS = [["marine le pen", "Marine Le Pen"], ["jordan bardella", "Jordan B
   ["raphael glucksmann", "Raphaël Glucksmann"], ["edouard philippe", "Édouard Philippe"], ["gabriel attal", "Gabriel Attal"],
   ["bruno retailleau", "Bruno Retailleau"], ["david lisnard", "David Lisnard"], ["eric zemmour", "Éric Zemmour"],
   ["fabien roussel", "Fabien Roussel"], ["marine tondelier", "Marine Tondelier"], ["dominique de villepin", "Dominique de Villepin"]];
-const PC = {on: new Set(CANDS.map(c => c[0])), months: 6, mode: "gap", tone: "drop", cache: new Map(), names: new Map(), last: []};
+const PC = {on: new Set(CANDS.map(c => c[0])), months: 6, mode: "gap", tone: "drop", rot: "varimax", color: "sig", cache: new Map(), names: new Map(), last: []};
 const pcName = k => PC.names.get(k) || (CANDS.find(c => c[0] === k) || [k, titleOf(k)])[1];
 const surname = s => { const w = s.split(" "); return w.length > 1 ? w.slice(1).join(" ") : s; };
 const ymAdd = (y, m, d) => { const t = y * 12 + (m - 1) + d; return [Math.floor(t / 12), t % 12 + 1]; };
@@ -1356,7 +1357,7 @@ function pcTables(data, per) {
     const all = merge(d, idx, S.dim); if (!all) { missing.push(pcName(k)); continue; }
     const by = new Map();
     for (const [o, js] of groupBy(idx, j => d.o[idx[j]])) { const r = merge(d, js.map(j => idx[j]), S.dim); if (r && r.n >= S.minn) by.set(o, r); }
-    rows.push({k, name: pcName(k), d, idx, all, by});
+    rows.push({k, name: pcName(k), d, idx, all, by, rest: o => merge(d, idx.filter(i => d.o[i] !== o), S.dim)});
   }
   return {rows, missing};
 }
@@ -1371,21 +1372,6 @@ function additive(obs) {
     mu = mean(obs.map(c => c.R - a.get(c.k) - b.get(c.o)));
   }
   return {mu, a, b};
-}
-function pcMatrix(rows) {
-  const outs = [...new Set(rows.flatMap(r => [...r.by.keys()]))].filter(o => rows.filter(r => r.by.has(o)).length >= 2);
-  const obs = []; rows.forEach(r => outs.forEach(o => { const x = r.by.get(o); if (x) obs.push({o, k: r.k, R: x.R}); }));
-  const fit = PC.mode === "net" && obs.length ? additive(obs) : null, cell = new Map();
-  for (const r of rows) for (const o of outs) {
-    const x = r.by.get(o); if (!x) continue;
-    let v = x.R, se = x.se, nOther = null;
-    if (PC.mode === "gap") {
-      const other = merge(r.d, r.idx.filter(i => r.d.o[i] !== o), S.dim); if (!other || other.n < S.minn) continue;
-      v = x.R - other.R; se = Math.hypot(x.se, other.se); nOther = other.n;
-    } else if (fit) v = x.R - fit.mu - fit.a.get(r.k) - fit.b.get(o);
-    cell.set(o + "|" + r.k, {v, se, R: x.R, n: x.n, nOther});
-  }
-  return {outs: outs.filter(o => rows.some(r => cell.has(o + "|" + r.k))), cell};
 }
 // symmetric eigen-decomposition (cyclic Jacobi); vecs[q] is the q-th eigenvector, by decreasing eigenvalue
 function jacobi(A) {
@@ -1406,7 +1392,7 @@ function jacobi(A) {
 }
 // PCA of a newspapers × candidates matrix (NaN = missing, filled in by iterative rank-2 PCA).
 // tone: also centre each row, so a newspaper’s average over the candidates does not count.
-function pca(M, tone) {
+function pca(M, tone, rot) {
   const nr = M.length, nc = M[0].length, miss = M.map(r => r.map(v => !Number.isFinite(v))), any = miss.some(r => r.some(Boolean));
   const X = M.map(r => r.slice());
   for (let j = 0; j < nc; j++) { let s = 0, n = 0; for (let i = 0; i < nr; i++) if (!miss[i][j]) { s += X[i][j]; n++; } for (let i = 0; i < nr; i++) if (miss[i][j]) X[i][j] = s / n; }
@@ -1425,13 +1411,29 @@ function pca(M, tone) {
     }
     if (delta < 1e-9) break;
   }
-  const tot = E.vals.reduce((s, v) => s + Math.max(v, 0), 0) || 1;
-  // sign: the candidate weighing most on an axis points to its positive side
-  const vecs = E.vecs.slice(0, 2).map(v => { let m = 0; for (const x of v) if (Math.abs(x) > Math.abs(m)) m = x; return m < 0 ? v.map(x => -x) : v; });
+  const tot = E.vals.reduce((s, v) => s + Math.max(v, 0), 0) || 1, lam = E.vals.slice(0, 2).map(v => Math.max(v, 0)), V2 = E.vecs.slice(0, 2);
   // arrows: loadings × √eigenvalue, so an axis that explains little stretches no arrow
-  const sd = E.vals.slice(0, 2).map(v => Math.sqrt(Math.max(v, 0)));
-  return {scores: Y.map(r => vecs.map(v => r.reduce((s, y, j) => s + y * v[j], 0))), load: M[0].map((_, j) => vecs.map((v, q) => v[j] * sd[q])),
-    expl: E.vals.slice(0, 2).map(v => Math.max(v, 0) / tot), nMiss: miss.flat().filter(Boolean).length};
+  let load = M[0].map((_, j) => V2.map((v, q) => v[j] * Math.sqrt(lam[q]))), scores = Y.map(r => V2.map(v => r.reduce((s, y, j) => s + y * v[j], 0)));
+  let expl = lam.map(v => v / tot);
+  // a near one-dimensional map has no second group to line up with: varimax would only tilt the main axis by up to 45°
+  const flat = rot && lam[1] < lam[0] / 3; if (flat) rot = false;
+  if (rot) {
+    // varimax: turn the whole map (points and arrows together, distances unchanged) so each axis lines up with a group of candidates
+    const t = varimaxAngle(load), c = Math.cos(t), sn = Math.sin(t), R = p => [p[0] * c + p[1] * sn, -p[0] * sn + p[1] * c];
+    load = load.map(R); scores = scores.map(R);
+    expl = [(c * c * lam[0] + sn * sn * lam[1]) / tot, (sn * sn * lam[0] + c * c * lam[1]) / tot];   // the scores stay uncorrelated before rotation
+    if (expl[1] > expl[0]) { const sw = p => [p[1], p[0]]; load = load.map(sw); scores = scores.map(sw); expl = sw(expl); }
+  }
+  // sign: the candidate weighing most on an axis points to its positive side
+  for (const q of [0, 1]) { let m = 0; for (const l of load) if (Math.abs(l[q]) > Math.abs(m)) m = l[q];
+    if (m < 0) { for (const l of load) l[q] = -l[q]; for (const sc of scores) sc[q] = -sc[q]; } }
+  return {scores, load, expl, rot, flat, nMiss: miss.flat().filter(Boolean).length};
+}
+// varimax angle for two axes, with Kaiser normalisation (closed form)
+function varimaxAngle(L) {
+  const p = L.length; let A = 0, B = 0, C = 0, D = 0;
+  for (const [x0, y0] of L) { const h = Math.hypot(x0, y0) || 1, x = x0 / h, y = y0 / h, u = x * x - y * y, v = 2 * x * y; A += u; B += v; C += u * u - v * v; D += 2 * u * v; }
+  return Math.atan2(D - 2 * A * B / p, C - (A * A - B * B) / p) / 4;
 }
 // keep candidates seen in ≥ 3 newspapers and newspapers that see ≥ 60% of the kept candidates
 function pcPCA(rows) {
@@ -1441,13 +1443,13 @@ function pcPCA(rows) {
   cols = cols.filter(r => outs.filter(o => r.by.has(o)).length >= 3);
   if (outs.length < 4 || cols.length < 3) return null;
   const M = outs.map(o => cols.map(r => r.by.has(o) ? r.by.get(o).R : NaN));
-  return {...pca(M, PC.tone === "drop"), outs, cols, M};
+  return {...pca(M, PC.tone === "drop", PC.rot === "varimax"), outs, cols, M};
 }
 
 function pcChips() {
   $("pc-chips").innerHTML = CANDS.map(([k]) => `<button type="button" class="ochip" data-k="${esc(k)}" aria-pressed="${PC.on.has(k)}">${esc(pcName(k))}</button>`).join("");
   $("pc-count").textContent = L(`${PC.on.size} of ${CANDS.length} selected`, `${PC.on.size} sur ${CANDS.length} sélectionnés`);
-  setSeg("pc-per", String(PC.months)); setSeg("pc-mode", PC.mode); setSeg("pc-tone", PC.tone);
+  setSeg("pc-per", String(PC.months)); setSeg("pc-mode", PC.mode); setSeg("pc-tone", PC.tone); setSeg("pc-rot", PC.rot); setSeg("hcolor", PC.color);
 }
 function pcEmpty(msg) { for (const id of ["pc-over", "pc-heat", "pc-pca"]) $(id).innerHTML = `<div class="empty">${msg}</div>`; for (const id of ["pc-over-sub", "pc-heat-sub", "pc-pca-sub"]) $(id).textContent = ""; }
 
@@ -1515,52 +1517,93 @@ function drawPcOver(rows) {
   box.append(svg, tip);
 }
 
-function drawPcHeat(cols, outs, mx, lab, ordered) {
-  const box = $("pc-heat"); box.innerHTML = "";
-  if (!outs.length || !cols.length) { box.innerHTML = `<div class="empty">${L(`No newspaper reaches ${S.minn} articles on two candidates or more.`, `Aucun journal n’atteint ${S.minn} articles sur deux candidats ou plus.`)}</div>`; $("pc-heat-sub").textContent = ""; return; }
+// newspapers × people matrix of cells; mode "gap": minus the same person in the other papers,
+// "net": residual of an additive fit (overall + person + paper), "raw": the score itself.
+// Each row: {k, name, by: Map(outlet → {R, se, n}), rest: outlet → pooled score in the other papers}
+function heatMatrix(rows, mode) {
+  const need = rows.length >= 2 ? 2 : 1;
+  const outs = [...new Set(rows.flatMap(r => [...r.by.keys()]))].filter(o => rows.filter(r => r.by.has(o)).length >= need);
+  const obs = []; rows.forEach(r => outs.forEach(o => { const x = r.by.get(o); if (x) obs.push({o, k: r.k, R: x.R}); }));
+  const fit = mode === "net" && obs.length ? additive(obs) : null, cell = new Map();
+  for (const r of rows) for (const o of outs) {
+    const x = r.by.get(o); if (!x) continue;
+    let v = x.R, se = x.se, nOther = null;
+    if (mode === "gap") {
+      const other = r.rest(o); if (!other || other.n < S.minn) continue;
+      v = x.R - other.R; se = Math.hypot(x.se, other.se); nOther = other.n;
+    } else if (fit) v = x.R - fit.mu - fit.a.get(r.k) - fit.b.get(o);
+    cell.set(o + "|" + r.k, {v, se, R: x.R, n: x.n, nOther});
+  }
+  return {outs: outs.filter(o => rows.some(r => cell.has(o + "|" + r.k))), cell};
+}
+const pcMatrix = rows => heatMatrix(rows, PC.mode);
+// colour strength of a cell, 0–1: by significance (|value| / standard error) or by size
+const Z_STRONG = 5;
+function heatAlpha(c, vmax) {
+  if (PC.color === "value") return 0.1 + 0.9 * Math.min(1, Math.abs(c.v) / vmax);
+  const z = c.se > 0 ? Math.abs(c.v) / c.se : 0;
+  return z < 1.96 ? 0.04 + 0.14 * z / 1.96 : 0.36 + 0.64 * Math.min(1, (z - 1.96) / (Z_STRONG - 1.96));
+}
+// shared heatmap: o = {box, sub, cols, outs, mx, lead, tail, people, colName, empty}
+function drawHeatmap(o) {
+  const {cols, outs, mx} = o, box = $(o.box); box.innerHTML = "";
+  if (!outs.length || !cols.length) { box.innerHTML = `<div class="empty">${o.empty}</div>`; $(o.sub).textContent = ""; return; }
   const abs = [...mx.cell.values()].map(c => Math.abs(c.v)).sort((a, b) => a - b), vmax = abs[Math.floor(abs.length * 0.95)] || abs[abs.length - 1] || 0.01;
   const avail = Math.max(box.clientWidth - 8, 320), narrow = avail < 560, m = {l: narrow ? 112 : 170, r: 64, t: 78, b: 6}, rowH = 24;
-  const cw = Math.max(narrow ? 40 : 46, (avail - m.l - m.r) / cols.length), W = m.l + m.r + cw * cols.length, H = m.t + m.b + rowH * outs.length;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, width: W, role: "img", "aria-label": L("Candidates by newspaper", "Candidats par journal")});
+  const cw = Math.min(150, Math.max(narrow ? 40 : 46, (avail - m.l - m.r) / cols.length)), W = m.l + m.r + cw * cols.length, H = m.t + m.b + rowH * outs.length;
+  const who = o.people ? L("People by newspaper", "Personnes par journal") : L("Candidates by newspaper", "Candidats par journal");
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, width: W, role: "img", "aria-label": who});
   svg.style.width = W + "px"; svg.style.maxWidth = "none";
   const pos = css("--hpos"), neg = css("--hneg"), grid = css("--grid"), panel = css("--panel"), fg = css("--fg");
   cols.forEach((r, j) => { const x = m.l + (j + 0.5) * cw;
-    svg.append(el("text", {class: "ch", x, y: m.t - 10, transform: `rotate(-35 ${x} ${m.t - 10})`}, trunc(surname(r.name), 16))); });
-  outs.forEach((o, i) => {
+    svg.append(el("text", {class: "ch", x, y: m.t - 10, transform: `rotate(-35 ${x} ${m.t - 10})`}, o.colName(r))); });
+  outs.forEach((ou, i) => {
     const y = m.t + i * rowH;
     svg.append(el("rect", {x: m.l, y: y + 1, width: cw * cols.length, height: rowH - 2, fill: grid, "fill-opacity": 0.5}));
-    svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 16, "text-anchor": "end"}, trunc(oname(S.outlets[o]), narrow ? 13 : 22)));
-    cols.forEach((r, j) => { const c = mx.cell.get(o + "|" + r.k); if (!c) return;
-      const al = 0.1 + 0.9 * Math.min(1, Math.abs(c.v) / vmax), x = m.l + j * cw;
+    svg.append(el("text", {class: "olab", x: m.l - 10, y: y + 16, "text-anchor": "end"}, trunc(oname(S.outlets[ou]), narrow ? 13 : 22)));
+    cols.forEach((r, j) => { const c = mx.cell.get(ou + "|" + r.k); if (!c) return;
+      const al = heatAlpha(c, vmax), x = m.l + j * cw;
       svg.append(el("rect", {x: x + 0.5, y: y + 1, width: cw - 1, height: rowH - 2, rx: 2, fill: c.v >= 0 ? pos : neg, "fill-opacity": al.toFixed(3)}));
       svg.append(el("text", {class: "cv" + (Math.abs(c.v) > 1.96 * c.se ? " sig" : ""), x: x + cw / 2, y: y + 16, "text-anchor": "middle", style: `fill:${al > 0.62 ? panel : fg}`}, fmt2(c.v))); });
   });
   const hit = el("rect", {x: m.l, y: m.t, width: cw * cols.length, height: rowH * outs.length, fill: "transparent"}); svg.append(hit);
   const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+  const netLab = o.people ? L("Net of paper and person", "Net du journal et de la personne") : L("Net of paper and candidate", "Net du journal et du candidat");
   const show = ev => {
     const r0 = svg.getBoundingClientRect(), sx = (ev.clientX - r0.left) * W / r0.width, sy = (ev.clientY - r0.top) * H / r0.height;
-    const o = outs[Math.floor((sy - m.t) / rowH)], r = cols[Math.floor((sx - m.l) / cw)], c = o != null && r ? mx.cell.get(o + "|" + r.k) : null;
+    const ou = outs[Math.floor((sy - m.t) / rowH)], r = cols[Math.floor((sx - m.l) / cw)], c = ou != null && r ? mx.cell.get(ou + "|" + r.k) : null;
     if (!c) { tip.hidden = true; return; }
-    const br = box.getBoundingClientRect(), what = PC.mode === "gap" ? L("Gap with the other papers", "Écart avec les autres journaux") : PC.mode === "net" ? L("Net of paper and candidate", "Net du journal et du candidat") : DIMS[S.dim].label;
-    tipAt(box, tip, ev.clientX - br.left + box.scrollLeft, ev.clientY - br.top, `<b>${esc(oname(S.outlets[o]))} · ${esc(r.name)}</b>` +
+    const br = box.getBoundingClientRect(), what = PC.mode === "gap" ? L("Gap with the other papers", "Écart avec les autres journaux") : PC.mode === "net" ? netLab : DIMS[S.dim].label;
+    const z = c.se > 0 ? c.v / c.se : 0;
+    tipAt(box, tip, ev.clientX - br.left + box.scrollLeft, ev.clientY - br.top, `<b>${esc(oname(S.outlets[ou]))} · ${esc(r.name)}</b>` +
       `<div class="r"><i style="background:${c.v >= 0 ? pos : neg}"></i><span>${what}</span><span class="v">${fmt(c.v)} ± ${dec((1.96 * c.se).toFixed(3))}</span></div>` +
+      `<div class="r"><i></i><span>z</span><span class="v">${dec(z.toFixed(1))}${Math.abs(z) >= 1.96 ? "" : L(" · not significant", " · non significatif")}</span></div>` +
       (PC.mode !== "raw" ? `<div class="r"><i></i><span>${DIMS[S.dim].label}</span><span class="v">${fmt(c.R)}</span></div>` : "") +
       `<div class="r"><i></i><span class="n">${nf.format(c.n)} articles${c.nOther != null ? L(` here, ${nf.format(c.nOther)} in the other papers`, ` ici, ${nf.format(c.nOther)} dans les autres journaux`) : ""}</span></div>`);
   };
   hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
   box.append(svg, tip);
-  const D = DIMS[S.dim], lbl = PC.mode === "raw" ? [D.neg, D.pos] : [L(`${D.neg}, relatively`, `${D.neg}, relativement`), L(`${D.pos}, relatively`, `${D.pos}, relativement`)];
+  const D = DIMS[S.dim], dl = D.label.toLowerCase(), lbl = PC.mode === "raw" ? [D.neg, D.pos] : [L(`${D.neg}, relatively`, `${D.neg}, relativement`), L(`${D.pos}, relatively`, `${D.pos}, relativement`)];
+  const en = o.people ? "person" : "candidate", du = o.people ? "de la personne" : "du candidat";
   const how = PC.mode === "gap"
-    ? L(`Each cell: the candidate’s ${D.label.toLowerCase()} in that newspaper minus their ${D.label.toLowerCase()} in all the other selected newspapers together. Above 0: ${D.pos}, more here than elsewhere.`,
-        `Chaque case : ${D.label.toLowerCase()} du candidat dans ce journal moins sa ${D.label.toLowerCase()} dans tous les autres journaux sélectionnés réunis. Au-dessus de 0 : ${D.pos}, plus ici qu’ailleurs.`)
+    ? L(`Each cell: the ${en}’s ${dl} in that newspaper minus their ${dl} in all the other selected newspapers together. Above 0: ${D.pos}, more here than elsewhere.`,
+        `Chaque case : ${dl} ${du} dans ce journal moins sa ${dl} dans tous les autres journaux sélectionnés réunis. Au-dessus de 0 : ${D.pos}, plus ici qu’ailleurs.`)
     : PC.mode === "net"
-    ? L(`Each cell: what is left of the score once the newspaper’s overall tone and the candidate’s overall score are taken out (additive fit). Above 0: ${D.pos}, more than this paper’s tone and this candidate’s coverage elsewhere would predict.`,
-        `Chaque case : ce qui reste du score une fois retirés le ton d’ensemble du journal et le score d’ensemble du candidat (ajustement additif). Au-dessus de 0 : ${D.pos}, plus que ne le prévoiraient le ton de ce journal et le traitement du candidat ailleurs.`)
-    : L(`Each cell: the candidate’s ${D.label.toLowerCase()} in that newspaper.`, `Chaque case : ${D.label.toLowerCase()} du candidat dans ce journal.`);
-  $("pc-heat-sub").innerHTML = `<span class="legend">${esc(lbl[0])} <span class="bar" style="background:linear-gradient(90deg, ${neg}, ${grid} 50%, ${pos})"></span> ${esc(lbl[1])}</span>` +
-    `<span style="display:block;margin-top:6px">${esc(lab)} · ${esc(how)} ${esc(L(`Bold: the 95% interval excludes 0. Blank: under ${S.minn} articles. The strongest colour is ±${dec(vmax.toFixed(3))}.`,
-      `En gras : l’intervalle à 95 % exclut 0. Vide : moins de ${S.minn} articles. La couleur la plus forte vaut ±${dec(vmax.toFixed(3))}.`))}` +
-    (ordered ? " " + esc(L("Rows and columns follow the first axis of the map below.", "Lignes et colonnes suivent le premier axe de la carte ci-dessous.")) : "") + `</span>`;
+    ? L(`Each cell: what is left of the score once the newspaper’s overall tone and the ${en}’s overall score are taken out (additive fit). Above 0: ${D.pos}, more than this paper’s tone and this ${en}’s coverage elsewhere would predict.`,
+        `Chaque case : ce qui reste du score une fois retirés le ton d’ensemble du journal et le score d’ensemble ${du} (ajustement additif). Au-dessus de 0 : ${D.pos}, plus que ne le prévoiraient le ton de ce journal et le traitement ${du} ailleurs.`)
+    : L(`Each cell: the ${en}’s ${dl} in that newspaper.`, `Chaque case : ${dl} ${du} dans ce journal.`);
+  const colour = PC.color === "value"
+    ? L(`Colour: size of the value; the strongest is ±${dec(vmax.toFixed(3))}.`, `Couleur : taille de la valeur ; la plus forte vaut ±${dec(vmax.toFixed(3))}.`)
+    : L(`Colour: how sure the value is, i.e. the value divided by its standard error (z). Pale: not significant at 95% (|z| < 1.96); darkest: |z| ≥ ${Z_STRONG}.`,
+        `Couleur : degré de certitude, c’est-à-dire la valeur divisée par son erreur type (z). Pâle : non significatif à 95 % (|z| < 1,96) ; le plus foncé : |z| ≥ ${Z_STRONG}.`);
+  $(o.sub).innerHTML = `<span class="legend">${esc(lbl[0])} <span class="bar" style="background:linear-gradient(90deg, ${neg}, ${grid} 50%, ${pos})"></span> ${esc(lbl[1])}</span>` +
+    `<span style="display:block;margin-top:6px">${esc(o.lead)} · ${esc(how)} ${esc(colour)} ${esc(L(`Bold: the 95% interval excludes 0. Blank: under ${S.minn} articles.`,
+      `En gras : l’intervalle à 95 % exclut 0. Vide : moins de ${S.minn} articles.`))}` + (o.tail ? " " + esc(o.tail) : "") + `</span>`;
+}
+function drawPcHeat(cols, outs, mx, lab, ordered) {
+  drawHeatmap({box: "pc-heat", sub: "pc-heat-sub", cols, outs, mx, lead: lab, people: false, colName: r => trunc(surname(r.name), 16),
+    empty: L(`No newspaper reaches ${S.minn} articles on two candidates or more.`, `Aucun journal n’atteint ${S.minn} articles sur deux candidats ou plus.`),
+    tail: ordered ? L("Rows and columns follow the first axis of the map below.", "Lignes et colonnes suivent le premier axe de la carte ci-dessous.") : ""});
 }
 
 function drawPcPCA(P, lab) {
@@ -1582,8 +1625,8 @@ function drawPcPCA(P, lab) {
   svg.append(el("line", {x1: m.l, x2: W - m.r, y1: cy, y2: cy, stroke: zero, "stroke-dasharray": "3 4"}));
   svg.append(el("line", {x1: cx, x2: cx, y1: m.t, y2: H - m.b, stroke: zero, "stroke-dasharray": "3 4"}));
   const pct = x => dec((100 * x).toFixed(0));
-  svg.append(el("text", {class: "pole", x: W - m.r, y: cy + 16, "text-anchor": "end"}, L(`axis 1 · ${pct(P.expl[0])}%`, `axe 1 · ${pct(P.expl[0])} %`)));
-  svg.append(el("text", {class: "pole", x: cx + 6, y: m.t + 10}, L(`axis 2 · ${pct(P.expl[1])}%`, `axe 2 · ${pct(P.expl[1])} %`)));
+  svg.append(el("text", {class: "pole", x: W - m.r, y: cy + 16, "text-anchor": "end"}, L(`axis 1 · ${pct(P.expl[0])}%`, `axe 1 · ${pct(P.expl[0])} %`) + (P.rot ? " · varimax" : "")));
+  svg.append(el("text", {class: "pole", x: cx + 6, y: m.t + 10}, L(`axis 2 · ${pct(P.expl[1])}%`, `axe 2 · ${pct(P.expl[1])} %`) + (P.rot ? " · varimax" : "")));
   // labels avoid each other greedily
   const boxes = [], cw = narrow ? 6.2 : 6.8;
   const clash = b => boxes.some(a => b.x < a.x + a.w && a.x < b.x + b.w && b.y < a.y + a.h && a.y < b.y + b.h);
@@ -1611,8 +1654,8 @@ function drawPcPCA(P, lab) {
     svg.append(hit); });
   box.append(svg, tip);
   const D = DIMS[S.dim], two = pct(P.expl[0] + P.expl[1]);
-  $("pc-pca-sub").textContent = L(`${lab} · Each newspaper is placed by its ${D.label.toLowerCase()} scores for ${P.cols.length} candidates: newspapers close together treat the candidates alike. An arrow points toward the newspapers where that candidate is most « ${D.pos} ». The two axes keep ${two}% of the differences between newspapers.`,
-    `${lab} · Chaque journal est placé selon ses scores de ${D.label.toLowerCase()} pour ${P.cols.length} candidats : des journaux proches traitent les candidats de la même façon. Une flèche pointe vers les journaux où ce candidat est le plus « ${D.pos} ». Les deux axes retiennent ${two} % des écarts entre journaux.`) +
+  $("pc-pca-sub").textContent = L(`${lab} · Each newspaper is placed by its ${D.label.toLowerCase()} scores for ${P.cols.length} candidates: newspapers close together treat the candidates alike. An arrow points toward the newspapers where that candidate is most « ${D.pos} ». The two axes keep ${two}% of the differences between newspapers.${P.rot ? " They are turned by varimax so that each lines up with a group of candidates; the map is only rotated, distances between newspapers do not change." : P.flat ? " Varimax is not applied: the second axis holds too little for a rotation to mean anything." : ""}`,
+    `${lab} · Chaque journal est placé selon ses scores de ${D.label.toLowerCase()} pour ${P.cols.length} candidats : des journaux proches traitent les candidats de la même façon. Une flèche pointe vers les journaux où ce candidat est le plus « ${D.pos} ». Les deux axes retiennent ${two} % des écarts entre journaux.${P.rot ? " Ils sont tournés par varimax pour que chacun s’aligne sur un groupe de candidats ; la carte est seulement pivotée, les distances entre journaux ne changent pas." : P.flat ? " Varimax n’est pas appliqué : le second axe pèse trop peu pour qu’une rotation ait un sens." : ""}`) +
     (PC.tone === "drop" ? " " + L("Each newspaper’s average over the candidates is taken out first, so the map shows whom a paper treats better or worse, not how harsh it is overall.",
       "La moyenne de chaque journal sur l’ensemble des candidats est d’abord retirée : la carte montre qui un journal traite mieux ou moins bien, pas sa sévérité générale.") : "") +
     (P.nMiss ? " " + L(`${P.nMiss} newspaper × candidate cells under ${S.minn} articles are filled in by iterative PCA.`, `${P.nMiss} cases journal × candidat sous ${S.minn} articles sont complétées par ACP itérative.`) : "");
@@ -1620,7 +1663,9 @@ function drawPcPCA(P, lab) {
 $("pc-chips").addEventListener("click", e => { const b = e.target.closest(".ochip"); if (!b) return; const k = b.dataset.k; PC.on.has(k) ? PC.on.delete(k) : PC.on.add(k); render(); });
 $("pc-all").addEventListener("click", () => { PC.on = new Set(CANDS.map(c => c[0])); render(); });
 $("pc-per").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.months = +b.dataset.v; render(); });
-$("pc-mode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.mode = b.dataset.v; render(); });
+for (const id of ["pc-mode", "o-mode"]) $(id).addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.mode = b.dataset.v; setSeg("pc-mode", PC.mode); setSeg("o-mode", PC.mode); render(); });
+$("hcolor").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.color = b.dataset.v; setSeg("hcolor", PC.color); render(); });
+$("pc-rot").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.rot = b.dataset.v; render(); });
 $("pc-tone").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PC.tone = b.dataset.v; render(); });
 // the six most covered candidates of the period, sent to « Over time »
 $("pc-follow").addEventListener("click", () => {
@@ -1661,7 +1706,7 @@ async function render() {
     if (S.adj) { try { await loadBase(); } catch (e) { baseErr = e.message; S.adj = false; setSeg("adj", "raw"); } if (my !== token) return; }
     drawOutlets(data); drawHeat(data); drawSummary(data);
     if (baseErr) $("out-sub").textContent += " " + L(`Relative scores are unavailable (${baseErr}): raw scores shown.`, `Scores relatifs indisponibles (${baseErr}) : scores bruts affichés.`);
-    if (S.adj) { if ($("out-sub").textContent) $("out-sub").textContent += " " + ADJ_NOTE();
+    if (S.adj) { if ($("out-sub").innerHTML) $("out-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
       if ($("heat-sub").innerHTML) $("heat-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
       $("sum-sub").textContent += ". " + ADJ_NOTE(); }
     return;
@@ -1750,6 +1795,8 @@ function showSugg() {
     if (q.value.trim()) { ul.innerHTML = `<li aria-disabled="true"><span class="alt">${!S.index ? L("The name list is still loading…", "La liste des noms se charge…")
       : L("No name in the list matches: type at least 3 letters to look it up", "Aucun nom de la liste ne correspond : tapez au moins 3 lettres pour le chercher")}</span></li>`; ul.hidden = false; } return; }
   ul.innerHTML = sugg.map((e, i) => e[5] ? `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${L("Look up", "Chercher")} « ${esc(e[1])} »</span><span class="n">${L("every name", "tous les noms")}</span></li>` : `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${esc(e[1])}${Array.isArray(e[4]) && e[4].length ? ` <span class="alt">· ${esc(String(e[4][0]))}</span>` : ""}</span><span class="n">${e[2] != null ? nf.format(e[2]) + " art." : ""}</span></li>`).join("");
+  // without the list, say why, so a broken /names_portraits does not just look like a search that finds nothing
+  if (S.noIndex) ul.insertAdjacentHTML("afterbegin", `<li aria-disabled="true"><span class="alt">${esc(L(`The name list did not load (${S.namesErr || S.noIndex}): type a full name to look it up.`, `La liste des noms ne s’est pas chargée (${S.namesErr || S.noIndex}) : tapez un nom complet pour le chercher.`))}</span></li>`);
   ul.hidden = false; q.setAttribute("aria-expanded", "true");
   if (active >= 0) q.setAttribute("aria-activedescendant", "opt" + active); else q.removeAttribute("aria-activedescendant");
 }
@@ -1858,7 +1905,7 @@ function setOutlets(on, save = true, draw = true) {
 const curOutlets = () => new Set(S.osel);
 $("ochips").addEventListener("click", e => { const b = e.target.closest(".ochip"); if (!b) return;
   const on = curOutlets(), i = +b.dataset.i; on.has(i) ? on.delete(i) : on.add(i); setOutlets(on); });
-// All / None / Main ten act on the newspapers offered and leave the others ticked or not
+// All / None / Main papers act on the newspapers offered and leave the others ticked or not
 $("o-all").addEventListener("click", () => setOutlets(new Set([...S.osel, ...availSet()])));
 $("o-none").addEventListener("click", () => { const av = availSet(); setOutlets(new Set([...S.osel].filter(i => !av.has(i)))); });
 $("o-main").addEventListener("click", () => { const av = availSet(); setOutlets(new Set([...[...S.osel].filter(i => !av.has(i)), ...[...mainSet()].filter(i => av.has(i))])); });
@@ -1890,7 +1937,7 @@ const FR = {
   "Across media": "Entre les médias", "One person, newspaper by newspaper": "Une personne, journal par journal",
   "Over time": "Dans le temps", "Year by year, or month by month": "Année par année, ou mois par mois",
   "Methodology": "Méthodologie", "How the data are built": "Comment les données sont construites", "From article to portrait": "De l’article au portrait",
-  "Newspapers": "Médias", "All": "Tous", "None": "Aucun", "Main ten": "Les dix principaux",
+  "Newspapers": "Médias", "All": "Tous", "None": "Aucun", "Main papers": "Les principaux",
   "People (up to six)": "Personnes (six au plus)", "Period": "Période", "to": "à", "Full period": "Toute la période",
   "Score": "Score", "Extremism": "Extrémisme", "Momentum": "Dynamique", "Hide points under": "Masquer les points sous",
   "2,000 articles": "2 000 articles", "10,000 articles": "10 000 articles",
@@ -1905,7 +1952,7 @@ const FR = {
   "Views": "Vues", "Light theme": "Thème clair", "Dark theme": "Thème sombre", "Filters": "Filtres", "From year": "Année de début", "To year": "Année de fin",
   "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "What do the scores mean?": "Que mesurent ces scores ?", "Hide": "Masquer", "Raw": "Bruts", "Gap with other papers": "Écart avec les autres journaux", "Relative to each paper": "Relatifs à chaque journal", "Rank people by": "Classer les personnes par",
   "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée",
-  "More options": "Plus d’options", "Rows": "Lignes", "Sections": "Rubriques", "Mostly in other sections": "Surtout dans d’autres rubriques", "Included": "Incluses", "Excluded": "Exclues",
+  "More options": "Plus d’options", "Gap with other papers that year": "Écart avec les autres journaux la même année", "Gap with own average": "Écart avec sa propre moyenne", "Value shown": "Valeur affichée", "Net of paper and person": "Net du journal et de la personne", "Heatmap colour": "Couleur des cases", "Significance": "Significativité", "Value": "Valeur", "Map axes": "Axes de la carte", "PCA": "ACP", "Rows": "Lignes", "Sections": "Rubriques", "Mostly in other sections": "Surtout dans d’autres rubriques", "Included": "Incluses", "Excluded": "Exclues",
   "People mostly covered in other sections": "Personnes surtout présentes dans d’autres rubriques", "2027 presidential": "Présidentielle 2027", "Candidates": "Candidats", "Campaign period": "Période de campagne",
   "3 months": "3 mois", "6 months": "6 mois", "12 months": "12 mois", "24 months": "24 mois",
   "Follow these candidates over time": "Suivre ces candidats dans le temps", "Overall score of each candidate": "Score d’ensemble de chaque candidat",
@@ -1942,9 +1989,9 @@ function start(ix) {
   if (document.activeElement === $("q") && $("q").value.trim()) suggest();
   setTab(location.hash.slice(1));
 }
-// Start-up: /newspapers_portraits gives the newspapers and their sections; /names_portrait feeds the search box
+// Start-up: /newspapers_portraits gives the newspapers and their sections; /names_portraits feeds the search box
 // (site/index.json is a fallback; without either, names are looked up in the API one by one).
-const NAMES_URL = API_ROOT + "/names_portrait", NEWS_URL = API_ROOT + "/newspapers_portraits";
+const NAMES_URL = API_ROOT + "/names_portraits", NEWS_URL = API_ROOT + "/newspapers_portraits";
 async function fetchText(u) { const r = await fetch(u); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); }
 // CSV "newspaper,sections", the sections comma-separated inside one quoted field
 async function loadNewspapers() {
@@ -1958,19 +2005,22 @@ async function loadNewspapers() {
 }
 // JSON ({names: [[key, name, n, …]]}, or a list of objects) or CSV with key, name/nom, n_articles[, first_month, last_month]
 function toIndex(t) {
-  t = t.replace(/^\ufeff/, "").trim(); let names, years = null;
-  if (t[0] === "{" || t[0] === "[") {
-    let j = JSON.parse(t);
+  t = t.replace(/^\ufeff/, "").trim(); let names, years = null, j = null;
+  if (t[0] === "{" || t[0] === "[" || t[0] === '"') { try { j = JSON.parse(t); } catch (e) { j = null; } }
+  // a CSV that came wrapped in JSON: one string, or an array of strings (the whole file, or one row each)
+  if (typeof j === "string") { t = j.replace(/^\ufeff/, "").trim(); j = null; }
+  else if (Array.isArray(j) && j.length && j.every(x => typeof x === "string")) { t = j.join("\n").replace(/^\ufeff/, "").trim(); j = null; }
+  if (j && typeof j === "object") {
     if (!Array.isArray(j) && Array.isArray(j.key)) j = j.key.map((k, i) => Object.fromEntries(Object.keys(j).map(c => [c, j[c][i]])));   // column-wise
     const arr = Array.isArray(j) ? j : j.names || j.data || [];
     names = arr.map(e => Array.isArray(e) ? e : [e.key, e.name || e.nom || titleOf(e.key), e.n_articles ?? e.n ?? null, e.off_section ?? null, []]);
     if (j.years) years = j.years;
-    if (!names.length || !names[0][0]) throw new Error(`names_portrait: no names found in the JSON (${t.slice(0, 80)}…)`);
+    if (!names.length || !names[0][0]) throw new Error(`names_portraits: no names found in the JSON (${t.slice(0, 80)}…)`);
   } else {
     const rows = parseCSV(t), h = rows[0].map(x => x.trim().toLowerCase()), at = (...a) => a.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
     const ki = at("key"), mi = at("name", "nom"), ai = at("n_articles", "n"), fi = at("first_month"), li = at("last_month"), oi = at("off_section");
-    if (ki < 0) throw new Error(`names_portrait has no key column (${rows[0].join(", ")})`);
-    if (rows.length < 2) throw new Error("names_portrait returned no names");
+    if (ki < 0) throw new Error(`names_portraits has no key column (${rows[0].join(", ")})`);
+    if (rows.length < 2) throw new Error("names_portraits returned no names");
     const body = rows.slice(1).filter(r => r[ki]);
     names = body.map(r => [r[ki], mi >= 0 && r[mi] ? r[mi] : titleOf(r[ki]), ai >= 0 && r[ai] !== "" ? +r[ai] : null, oi >= 0 && r[oi] !== "" ? r[oi] : null, []]);
     if (fi >= 0 && li >= 0) { let y0 = 1e4, y1 = 0; for (const r of body) { const f = +String(r[fi]).slice(0, 4), l = +String(r[li]).slice(0, 4); if (f && f < y0) y0 = f; if (l > y1) y1 = l; }
@@ -1985,7 +2035,7 @@ function toIndex(t) {
 Promise.allSettled([fetchText(NAMES_URL).then(toIndex), loadNewspapers()]).then(([ix, np]) => {
   if (np.status === "rejected") { console.warn("newspapers_portraits:", np.reason); S.outlets = []; S.npSecs = new Map(); }
   if (ix.status === "fulfilled") return start(ix.value);
-  console.warn("names_portrait:", ix.reason);
+  console.warn("names_portraits:", ix.reason);
   S.namesErr = ix.reason.message;
   getJSON(DATA + "index.json").then(start, () => { S.noIndex = `${NAMES_URL}: ${ix.reason.message}`; start({names: [], years: [1944, new Date().getFullYear()]}); });
 });
