@@ -40,6 +40,14 @@ header { display: grid; gap: 6px; }
 .row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
 .field { display: grid; gap: 4px; min-width: 0; }
 .field[hidden] { display: none; }
+.more { border-top: 1px solid var(--rule); padding-top: 12px; }
+.more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font: 600 13px var(--f-body); color: var(--fg2); padding: 2px 0; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
+.more[open] > summary::before { transform: rotate(45deg); }
+.more > summary:hover { color: var(--fg); }
+.more > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.more > .row { margin-top: 12px; align-items: end; }
 .field > span { font: 500 13px/1 var(--f-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .search { position: relative; flex: 1 1 280px; min-width: 0; }
 .search input { width: 100%; box-sizing: border-box; font: 16px var(--f-body); padding: 9px 12px; border-radius: 8px;
@@ -217,6 +225,7 @@ details.cb .cbtext { white-space: normal; }
 .chart .pcl { font-family: var(--f-body); font-size: 13.5px; fill: var(--fg); }
 .chart .pcv { font-family: var(--f-body); font-size: 14px; font-style: italic; font-weight: 600; fill: var(--fg2); }
 .qmsg { flex-basis: 100%; }
+.chart .nm.off { font-style: italic; fill: var(--muted); }
 /* while new data loads: the old chart fades and a label says so */
 .chart.busy { min-height: 72px; }
 .chart.busy > * { opacity: 0.3; transition: opacity 0.2s; pointer-events: none; }
@@ -286,21 +295,37 @@ details.cb .cbtext { white-space: normal; }
             <p data-l="en">Each mention gets −1, 0 or +1; points are averages, so most sit close to 0.</p>
             <p data-l="fr" lang="fr">Chaque mention reçoit −1, 0 ou +1 ; les points sont des moyennes, d’où des valeurs souvent proches de 0.</p>
           </div></details></div>
-      <div class="field"><span>Hide points under</span>
+    </div>
+    <details class="more" id="more" data-tabs="top corpora time pres">
+      <summary>More options</summary>
+      <div class="row">
+        <div class="field" data-tabs="top"><span>Rank by</span><div class="seg" id="rk-sort" role="group" aria-label="Rank people by">
+            <button type="button" data-k="score" id="rk-score" aria-pressed="true">Valence</button><button type="button" data-k="n" aria-pressed="false">Articles</button></div></div>
+        <div class="field" data-tabs="top"><span>Rows</span><div class="seg" id="rk-show" role="group" aria-label="Show">
+            <button type="button" data-v="ends" aria-pressed="true">Both ends</button><button type="button" data-v="all" aria-pressed="false">Everyone</button></div></div>
+        <div class="field" data-tabs="top"><span>Each end</span><select id="rk-n" aria-label="People at each end">
+            <option value="10">10 people</option><option value="15" selected>15 people</option><option value="25">25 people</option></select></div>
+        <div class="field" data-tabs="top"><span>At least</span><select id="rk-min" aria-label="Minimum articles">
+            <option value="50">50 articles</option><option value="200">200 articles</option><option value="500" selected>500 articles</option>
+            <option value="2000">2,000 articles</option><option value="10000">10,000 articles</option></select></div>
+        <div class="field" id="rk-off-f" data-tabs="top"><span>Mostly in other sections</span><div class="seg" id="rk-off" role="group" aria-label="People mostly covered in other sections">
+            <button type="button" data-v="show" aria-pressed="true">Included</button><button type="button" data-v="hide" aria-pressed="false">Excluded</button></div></div>
+        <div class="field" data-tabs="corpora time pres"><span>Hide points under</span>
         <select id="minn" aria-label="Minimum articles per point">
           <option value="5">5 articles</option><option value="10" selected>10 articles</option>
           <option value="30">30 articles</option><option value="100">100 articles</option></select></div>
-      <div class="field"><span>95% intervals</span>
+        <div class="field" data-tabs="top corpora time pres"><span>95% intervals</span>
         <div class="seg" id="ci" role="group" aria-label="95% intervals">
           <button type="button" data-v="on" aria-pressed="true">Show</button>
           <button type="button" data-v="off" aria-pressed="false">Hide</button>
         </div></div>
-      <div class="field" data-tabs="top corpora"><span>Scores</span>
+        <div class="field" data-tabs="top corpora"><span>Scores</span>
         <div class="seg" id="adj" role="group" aria-label="Scores">
           <button type="button" data-v="raw" aria-pressed="true">Raw</button>
           <button type="button" data-v="rel" aria-pressed="false">Relative to each paper</button>
         </div></div>
-    </div>
+      </div>
+    </details>
   </div>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Views">
@@ -314,18 +339,7 @@ details.cb .cbtext { white-space: normal; }
   <!-- Top -->
   <div class="panel" id="p-top" role="tabpanel" aria-labelledby="tab-top">
     <section class="card" aria-labelledby="t-rank">
-      <div class="cardhead"><h2 id="t-rank">Best and worst judged</h2>
-        <div class="row" style="gap:10px 16px">
-          <div class="field"><span>Rank by</span><div class="seg" id="rk-sort" role="group" aria-label="Rank people by">
-            <button type="button" data-k="score" id="rk-score" aria-pressed="true">Valence</button><button type="button" data-k="n" aria-pressed="false">Articles</button></div></div>
-          <div class="field"><span>Show</span><div class="seg" id="rk-show" role="group" aria-label="Show">
-            <button type="button" data-v="ends" aria-pressed="true">Both ends</button><button type="button" data-v="all" aria-pressed="false">Everyone</button></div></div>
-          <div class="field"><span>Each end</span><select id="rk-n" aria-label="People at each end">
-            <option value="10">10 people</option><option value="15" selected>15 people</option><option value="25">25 people</option></select></div>
-          <div class="field"><span>At least</span><select id="rk-min" aria-label="Minimum articles">
-            <option value="50">50 articles</option><option value="200">200 articles</option><option value="500" selected>500 articles</option>
-            <option value="2000">2,000 articles</option><option value="10000">10,000 articles</option></select></div>
-        </div></div>
+      <div class="cardhead"><h2 id="t-rank">Best and worst judged</h2></div>
       <div class="sub" id="rk-sub">Loading the ranking…</div>
       <div class="chart rk-fig" id="rank"></div>
     </section>
@@ -719,24 +733,26 @@ const cOK = (c, i) => S.secs.has(c.s[i]) && (!S.oset || S.oset.has(c.o[i]));
 const hasM = d => !!d.m && (!S.oset || !!d.m.o);
 // Is this person drawn by year while a finer step is selected?
 const fallback = d => S.res !== "year" && !hasM(d);
+// "YYYY-MM" → the label of its quarter or month, at the current time step
+const perLab = ym => { const [y, mo] = ym.split("-").map(Number); return S.res === "month" ? ym : `${y}-Q${Math.floor((mo - 1) / 3) + 1}`; };
 function monthGroups(m) {
   return groupBy(m.month, i => {
     if (!cOK(m, i)) return null;
-    const [y, mo] = m.month[i].split("-").map(Number);
-    if (!inPeriod(y)) return null;
-    return S.res === "month" ? m.month[i] : `${y}-Q${Math.floor((mo - 1) / 3) + 1}`;
+    if (!inPeriod(+m.month[i].slice(0, 4))) return null;
+    return perLab(m.month[i]);
   });
 }
 const labT = lab => { const y = +lab.slice(0, 4); return S.res === "month" ? y + (+lab.slice(5) - 0.5) / 12 : y + (+lab.slice(6) - 0.5) / 4; };
 function yearCells(d) { return d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && cOK(d.y, i)); }
 
 function series(d) {
-  if (gapOn()) {
-    const all = d.y.year.map((_, i) => i).filter(i => inPeriod(d.y.year[i]) && S.secs.has(d.y.s[i]));
-    return [...groupBy(all, j => d.y.year[all[j]])].map(([y, js]) => {
-      const ii = js.map(j => all[j]), a = merge(d.y, ii.filter(i => S.oset.has(d.y.o[i])), S.dim), b = merge(d.y, ii.filter(i => !S.oset.has(d.y.o[i])), S.dim);
+  if (gapOn()) {   // selected newspapers minus every other newspaper, period by period (year, quarter or month)
+    const byM = S.res !== "year" && hasM(d), c = byM ? d.m : d.y, yr = i => byM ? +c.month[i].slice(0, 4) : c.year[i];
+    const all = c.o.map((_, i) => i).filter(i => inPeriod(yr(i)) && S.secs.has(c.s[i]));
+    return [...groupBy(all, j => byM ? perLab(c.month[all[j]]) : c.year[all[j]])].map(([p, js]) => {
+      const ii = js.map(j => all[j]), a = merge(c, ii.filter(i => S.oset.has(c.o[i])), S.dim), b = merge(c, ii.filter(i => !S.oset.has(c.o[i])), S.dim);
       if (!a || !b || b.n < S.minn) return null;
-      return {t: y + 0.5, label: String(y), R: a.R - b.R, se: Math.hypot(a.se, b.se), n: a.n, nOther: b.n};
+      return {t: byM ? labT(p) : p + 0.5, label: String(p), R: a.R - b.R, se: Math.hypot(a.se, b.se), n: a.n, nOther: b.n};
     }).filter(Boolean).sort((a, b) => a.t - b.t);
   }
   if (S.res === "year" || !hasM(d)) {
@@ -1076,27 +1092,36 @@ function drawSummary(data) {
 }
 
 // ranking: the most mentioned people of the selected period and newspapers, three panels sharing the row order
-const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false};
+const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false,
+  // off by default: the API only works out who is off-section when asked (section_flag=True), which is slower
+  offHide: (() => { try { return localStorage.getItem("pp-off2") === "hide"; } catch (e) { return false; } })()};
+// off_section (from /rankings_portraits, else /names_portrait): either a flag (1/true) for people who belong elsewhere,
+// or the section where the person is mostly covered, in which case they are off when that section is not picked.
+function offOf(v) {
+  if (v == null) return null; const t = String(v).trim(); if (!t) return null;
+  if (/^(1|true|yes|oui)$/i.test(t)) return true; if (/^(0|false|no|non)$/i.test(t)) return false;
+  return !S.secs.has(t);
+}
 // rank by the score picked in the filters above, or by number of articles
 const RKS = () => RK.byN ? "n" : S.dim;
 // /rankings_portraits?from&to&min&section[&newspaper]: one row per person, sums pooled over the period and newspapers,
 // plus E_<score> / EW, the leave-one-out newspaper baseline used by relative scores. Kept per query.
-function rankQ() { const p = {from: S.y0, to: S.y1, min: RK.min, section: [...S.secs].sort().join(",")}; if (S.oset) p.newspaper = [...S.oset].map(i => S.outlets[i]).sort().join(","); return new URLSearchParams(p).toString(); }
+function rankQ() { const p = {from: S.y0, to: S.y1, min: RK.min, section: [...S.secs].sort().join(","), section_flag: RK.offHide ? "True" : "False"}; if (S.oset) p.newspaper = [...S.oset].map(i => S.outlets[i]).sort().join(","); return new URLSearchParams(p).toString(); }
 // Either CSV with <score>_mean and <score>_se per person (your route), or JSON with the sums (ngramsci_routes.py).
 // Both become {key, name, n, R: {score: []}, se: {score: []}, E: {score: []} or null}; E is the relative-score baseline.
 function rankTable(t) {
   t = t.trim();
-  const out = {key: [], name: [], n: [], R: {}, se: {}, E: null}; for (const dm of DK) { out.R[dm] = []; out.se[dm] = []; }
+  const out = {key: [], name: [], n: [], off: [], R: {}, se: {}, E: null}; for (const dm of DK) { out.R[dm] = []; out.se[dm] = []; }
   if (t[0] === "{") {
     const d = JSON.parse(t); d.n_docs = d.n_articles; if (d.EW) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
-    d.key.forEach((k, j) => { out.key.push(k); out.name.push(d.name[j]); out.n.push(d.n_articles[j]);
+    d.key.forEach((k, j) => { out.key.push(k); out.name.push(d.name[j]); out.n.push(d.n_articles[j]); out.off.push(d.off_section ? d.off_section[j] : null);
       for (const dm of DK) { const m = merge(d, [j], dm); out.R[dm].push(m ? m.R : NaN); out.se[dm].push(m ? m.se : NaN);
         if (out.E) out.E[dm].push(d.EW[j] > 0 ? d["E_" + dm][j] / d.EW[j] : NaN); } });
     return out;
   }
   const rows = parseCSV(t); if (!rows.length) return out;
   const h = rows[0].map(x => x.trim().toLowerCase()), at = (...a) => a.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
-  const ki = at("key"), ni = at("name", "nom"), ai = at("n_articles", "n_docs", "n");
+  const ki = at("key"), ni = at("name", "nom"), ai = at("n_articles", "n_docs", "n"), oi = at("off_section");
   const col = (dm, suf) => at(...DIMA[dm].flatMap(a => [`${a}_${suf}`, `${suf}_${a}`]));
   const mi = Object.fromEntries(DK.map(dm => [dm, col(dm, "mean")])), si = Object.fromEntries(DK.map(dm => [dm, col(dm, "se")]));
   const ei = Object.fromEntries(DK.map(dm => [dm, col(dm, "expected")]));
@@ -1104,7 +1129,7 @@ function rankTable(t) {
   if (DK.every(dm => ei[dm] >= 0)) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
   const num = (r, j) => j < 0 || r[j] === "" || r[j] == null ? NaN : +r[j];
   for (const r of rows.slice(1)) { if (!r[ki]) continue;
-    out.key.push(r[ki]); out.name.push(ni >= 0 ? r[ni] : null); out.n.push(num(r, ai));
+    out.key.push(r[ki]); out.name.push(ni >= 0 ? r[ni] : null); out.n.push(num(r, ai)); out.off.push(oi >= 0 ? r[oi] : null);
     for (const dm of DK) { out.R[dm].push(num(r, mi[dm])); out.se[dm].push(num(r, si[dm])); if (out.E) out.E[dm].push(num(r, ei[dm])); } }
   return out;
 }
@@ -1180,16 +1205,21 @@ async function drawRanking() {
   try { d = await whileBusy(["rank"], L("Computing the ranking…", "Calcul du classement…"), loadRanking); } catch (e) { if (my !== RK.tok) return; box.innerHTML = "";
     $("rk-sub").textContent = L(`The ranking could not be loaded from the API (${e.message}).`, `Le classement n’a pas pu être chargé depuis l’API (${e.message}).`); return; }
   if (my !== RK.tok) return;
-  const people = [];
+  const people = []; let nOff = 0, hasOff = false;
   d.key.forEach((k, j) => {
     const n = d.n[j]; if (!(n >= RK.min)) return;
-    const r = {i: j, n, name: d.name[j] || titleOf(k), key: k};
-    for (const dm of Object.keys(DIMS)) { const R = d.R[dm][j]; if (!Number.isFinite(R)) return;
+    const raw = d.off[j] ?? (S.byKey.has(k) ? S.index.names[S.byKey.get(k)][3] : null), off = offOf(raw);
+    if (off != null) hasOff = true;
+    if (off && RK.offHide) { nOff++; return; }
+    const r = {i: j, n, name: d.name[j] || titleOf(k), key: k, off: !!off, offSec: off && !/^(1|true|yes|oui)$/i.test(String(raw).trim()) ? String(raw).trim() : null};
+    if (!Number.isFinite(d.R[S.dim][j])) return;   // only the score picked above is drawn
+    for (const dm of Object.keys(DIMS)) { const R = d.R[dm][j]; if (!Number.isFinite(R)) continue;
       r[dm] = R; r[dm + "_ci"] = 1.96 * (d.se[dm][j] || 0);
       if (S.adj && d.E && Number.isFinite(d.E[dm][j])) r[dm] -= d.E[dm][j]; }
     people.push(r);
   });
   const noRel = S.adj && !d.E;   // the route sends no baseline: raw scores, said so below
+  setSeg("rk-off", RK.offHide ? "hide" : "show");
   people.sort((a, b) => b[RKS()] - a[RKS()]);
   people.forEach((r, j) => r.rank = j + 1);
   const N = people.length, e = RK.ends, split = N > 2 * e, mid = split ? N - 2 * e : 0;
@@ -1197,10 +1227,14 @@ async function drawRanking() {
   if (!N) { box.innerHTML = `<div class="empty">${L(`Nobody reaches ${nf.format(RK.min)} articles in ${S.y0}–${S.y1} with these newspapers.`, `Personne n’atteint ${nf.format(RK.min)} articles en ${S.y0}–${S.y1} avec ces journaux.`)}</div>`; $("rk-sub").textContent = ""; return; }
   $("rk-sub").textContent = L(`${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "person is" : "people are"} named in at least ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `All of them, ranked by ${what}; the ${e} at each end are marked.` : `Only the two ends are shown: the ${e} highest and the ${e} lowest by ${what}; the ${nf.format(mid)} in between are hidden.`)
-      : `All of them, ranked by ${what}.`) + ` Dots: averages${S.ci ? " with 95% intervals" : ""}; each panel has its own scale. Click a name to follow that person over time.`,
+      : `All of them, ranked by ${what}.`) + ` Dots: ${DIMS[S.dim].label.toLowerCase()}, averages${S.ci ? " with 95% intervals" : ""}. Click a name to follow that person over time.`,
     `${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "personne est citée" : "personnes sont citées"} dans au moins ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `Toutes, classées par ${what} ; les ${e} de chaque bout sont signalées.` : `Seuls les deux bouts sont affichés : les ${e} plus hautes et les ${e} plus basses en ${what} ; les ${nf.format(mid)} du milieu sont masquées.`)
-      : `Toutes, classées par ${what}.`) + ` Points : moyennes${S.ci ? " avec intervalles à 95 %" : ""} ; chaque panneau a sa propre échelle. Cliquez sur un nom pour suivre la personne dans le temps.`);
+      : `Toutes, classées par ${what}.`) + ` Points : ${DIMS[S.dim].label.toLowerCase()}, moyennes${S.ci ? " avec intervalles à 95 %" : ""}. Cliquez sur un nom pour suivre la personne dans le temps.`);
+  if (nOff) $("rk-sub").textContent += " " + L(`${nf.format(nOff)} ${nOff === 1 ? "person" : "people"} mostly covered in other sections ${nOff === 1 ? "is" : "are"} hidden.`,
+    `${nf.format(nOff)} ${nOff === 1 ? "personne surtout présente" : "personnes surtout présentes"} dans d’autres rubriques ${nOff === 1 ? "est masquée" : "sont masquées"}.`);
+  else if (RK.offHide) $("rk-sub").textContent += " " + L("People mostly covered in other sections are left out.", "Les personnes surtout présentes dans d’autres rubriques sont exclues.");
+  else if (people.some(r => r.off)) $("rk-sub").textContent += " " + L("In italics: people mostly covered in other sections.", "En italique : personnes surtout présentes dans d’autres rubriques.");
   if (noRel) $("rk-sub").textContent += " " + L("Relative scores are not available in the ranking yet (the API sends no newspaper baseline): these are raw scores.",
     "Les scores relatifs ne sont pas encore disponibles dans le classement (l’API n’envoie pas la référence par journal) : ce sont des scores bruts.");
   else if (S.adj) $("rk-sub").textContent += " " + ADJ_NOTE();
@@ -1216,15 +1250,15 @@ async function drawRanking() {
   } else people.forEach(r => items.push({r}));
   const rowH = 19, bandH = 28, gapH = 40, top = 54, bot = 26, left = 214, gp = 26;
   let yy = top, AX = null; for (const it of items) { if (it.below) { AX = yy; it.y = yy + 22; yy = it.y + bandH; continue; } it.y = yy; yy += it.r ? rowH : it.gap != null ? gapH : bandH; }
-  const W = Math.max(box.clientWidth - 8, 760), H = AX != null ? yy + 4 : yy + bot, AXY = AX ?? H - bot, pw = (W - left - gp * 2 - 8) / 3;
+  const W = Math.max(box.clientWidth - 8, 760), H = AX != null ? yy + 4 : yy + bot, AXY = AX ?? H - bot, pw = W - left - 8;
   const rows = items.filter(it => it.r);
   box.innerHTML = "";
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${EXT[RKS()][2]} : ${Object.values(DIMS).map(x => x.label).join(", ")}`});
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${EXT[RKS()][2]} : ${DIMS[S.dim].label}`});
   const grid = css("--grid"), zero = css("--zero"), panel = css("--panel"), band = css("--chip"), base = css("--muted"), fg = css("--fg"), rule = css("--rule");
   rows.forEach((it, j) => { const {r, y} = it;
     if (j % 2 === 0) svg.append(el("rect", {x: 0, y, width: W, height: rowH, fill: band, "fill-opacity": 0.6}));
     svg.append(el("text", {class: "rk", x: 36, y: y + 13, "text-anchor": "end"}, r.rank));
-    svg.append(el("text", {class: "nm" + (S.sel.includes(r.key) ? " on" : ""), x: 44, y: y + 13.5}, trunc(r.name, 25))); });
+    svg.append(el("text", {class: "nm" + (S.sel.includes(r.key) ? " on" : "") + (r.off ? " off" : ""), x: 44, y: y + 13.5}, trunc(r.name, 25))); });
   for (const it of items) {
     if (it.band) { const ly = it.below ? it.y + 2 : it.y + bandH - 3, ty = it.below ? it.y + 20 : it.y + bandH - 9;
       svg.append(el("line", {x1: 0, x2: W, y1: ly, y2: ly, stroke: it.quiet ? rule : fg, "stroke-width": it.quiet ? 1 : 1.25}));
@@ -1236,13 +1270,13 @@ async function drawRanking() {
       it.node = t;
     }
   }
-  Object.entries(DIMS).forEach(([dm, p], j) => {
-    const x0 = left + j * (pw + gp), on = dm === RKS();
+  [[S.dim, DIMS[S.dim]]].forEach(([dm, p]) => {
+    const x0 = left, on = true;
     const cz = S.ci ? 1 : 0;
     let lo = Math.min(0, ...rows.map(({r}) => r[dm] - cz * r[dm + "_ci"])), hi = Math.max(0, ...rows.map(({r}) => r[dm] + cz * r[dm + "_ci"]));
     const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
     const X = v => x0 + (v - lo) / (hi - lo) * pw;
-    svg.append(el("text", {class: "ttl", x: x0, y: 18, style: on ? "" : "font-weight:500;fill:var(--fg2)"}, p.label + (on ? L("  · ranked by this", "  · critère du classement") : "")));
+    svg.append(el("text", {class: "ttl", x: x0, y: 18, style: on ? "" : "font-weight:500;fill:var(--fg2)"}, p.label + (RK.byN ? L("  · rows ordered by number of articles", "  · lignes classées par nombre d’articles") : "")));
     svg.append(el("text", {class: "pole", x: x0, y: 36}, "← " + p.neg));
     svg.append(el("text", {class: "pole", x: x0 + pw, y: 36, "text-anchor": "end"}, p.pos + " →"));
     for (const v of niceTicks(lo, hi, 4)) { const z = Math.abs(v) < 1e-12;
@@ -1257,7 +1291,8 @@ async function drawRanking() {
     const hit = el("rect", {x: 0, y, width: W, height: rowH, fill: "transparent", style: "cursor:pointer"});
     const show = ev => { const b = box.getBoundingClientRect();
       tipAt(box, tip, ev.clientX - b.left + box.scrollLeft, ev.clientY - b.top, `<b>${r.rank} ${L("of", "sur")} ${nf.format(N)}. ${esc(r.name)} · ${nf.format(r.n)} articles</b>` +
-        Object.entries(DIMS).map(([dm, p]) => `<div class="r"><i></i><span>${p.label}</span><span class="v">${fmt(r[dm])} ± ${dec(r[dm + "_ci"].toFixed(3))}</span></div>`).join("") +
+        Object.entries(DIMS).map(([dm, p]) => `<div class="r"><i></i><span>${p.label}</span><span class="v">${r[dm] != null ? fmt(r[dm]) + " ± " + dec(r[dm + "_ci"].toFixed(3)) : "–"}</span></div>`).join("") +
+        (r.off ? `<div class="r"><i></i><span class="n" style="grid-column:2/4">${r.offSec ? L(`Mostly covered in ${secName(r.offSec)}`, `Surtout présent·e en ${secName(r.offSec)}`) : L("Mostly covered in other sections", "Surtout présent·e dans d’autres rubriques")}</span></div>` : "") +
         `<div class="r"><i></i><span class="n" style="grid-column:2/4">${(S.sel.includes(r.key) ? L("Selected · click to follow over time", "Sélectionnée · cliquez pour la suivre dans le temps") : S.sel.length >= MAXP ? L("Click to follow over time (replaces the last person)", "Cliquez pour la suivre dans le temps (remplace la dernière personne)") : L("Click to follow over time", "Cliquez pour la suivre dans le temps"))}</span></div>`); };
     hit.addEventListener("pointermove", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
     hit.addEventListener("click", () => { register(r.key, r.name, r.n); if (!S.sel.includes(r.key)) { if (S.sel.length >= MAXP) S.sel.pop(); S.sel.push(r.key); } goTab("time"); $("tabs").scrollIntoView({block: "start"}); });
@@ -1271,6 +1306,8 @@ function segments(items, y0, y1) {
   for (const it of items) { if (it.r) { if (a == null) a = it.y; } else { if (a != null) out.push([a, it.below ? it.y - 22 : it.y]); a = null; } }
   if (a != null) out.push([a, y1]); return out.length ? out : [[y0, y1]];
 }
+$("rk-off").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.offHide = b.dataset.v === "hide";
+  try { localStorage.setItem("pp-off2", b.dataset.v); } catch (er) {} drawRanking(); });
 $("rk-n").addEventListener("change", e => { RK.ends = +e.target.value; drawRanking(); });
 $("rk-show").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.all = b.dataset.v === "all"; drawRanking(); });
 $("rk-min").addEventListener("change", e => { RK.min = +e.target.value; drawRanking(); });
@@ -1631,7 +1668,7 @@ async function render() {
   }
   // Quarter / month are available as soon as one selected person has usable monthly data;
   // the others are drawn by year (dashed) instead of locking everyone to yearly.
-  const anyM = !gapOn() && data.some(x => hasM(x.d));
+  const anyM = data.some(x => hasM(x.d));
   setSeg("tgap", S.tgap ? "gap" : "score");
   document.querySelectorAll("#res button").forEach(b => { if (b.dataset.v !== "year") b.disabled = !anyM; });
   if (!anyM && S.res !== "year") setSeg("res", S.res = "year");
@@ -1641,9 +1678,6 @@ async function render() {
     hint.hidden = false;
     hint.innerHTML = L("Pick some newspapers in the filters above: the gap compares them with all the other newspapers. Showing plain scores for now.",
       "Choisissez des journaux dans les filtres ci-dessus : l’écart les compare à tous les autres journaux. Scores simples en attendant.");
-  } else if (gapOn()) {
-    hint.hidden = false;
-    hint.innerHTML = L("The gap is computed by year.", "L’écart est calculé par année.");
   } else if (data.length && !anyM) {
     hint.hidden = false;
     hint.innerHTML = filtered ? L("Quarter and month steps cover all newspapers together.", "Les pas trimestriel et mensuel portent sur tous les journaux ensemble.") + ` <button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>`
@@ -1657,8 +1691,8 @@ async function render() {
   if (!data.length) { $("timechart").innerHTML = `<div class="empty">${L("Add a person above to follow them over time.", "Ajoutez une personne ci-dessus pour la suivre dans le temps.")}</div>`; $("men").innerHTML = ""; $("men-sub").textContent = ""; $("ttable").innerHTML = ""; $("time-sub").textContent = ""; return; }
   $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}, ${S.res === "year" ? "yearly" : S.res === "quarter" ? "quarterly" : "monthly"} means${S.ci ? " with 95% intervals" : ""}${papers}. Drag across the chart to zoom, double-click to reset.`, `${per} · ${DIMS[S.dim].label}, moyennes ${S.res === "year" ? "annuelles" : S.res === "quarter" ? "trimestrielles" : "mensuelles"}${S.ci ? " avec intervalles à 95 %" : ""}${papers}. Faites glisser sur le graphique pour zoomer, double-cliquez pour revenir.`);
   $("men-sub").textContent = L(`${per} · Articles mentioning the person, ${S.res === "year" ? "per year" : S.res === "quarter" ? "per quarter" : "per month"}${papers}. Raw counts: the corpus grows over time, so contrasts between people are more meaningful than contrasts between years.`, `${per} · Articles mentionnant la personne, ${S.res === "year" ? "par an" : S.res === "quarter" ? "par trimestre" : "par mois"}${papers}. Comptes bruts : le volume du corpus augmente au cours du temps, les contrastes entre personnes sont donc plus pertinents que les contrastes entre années.`);
-  if (gapOn()) $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}: score in the selected newspapers minus the same person’s score in all other newspapers, each year${S.ci ? ", with 95% intervals" : ""}. Above 0: ${DIMS[S.dim].pos} more here than elsewhere. A flat line means the person moved the same way everywhere.`,
-    `${per} · ${DIMS[S.dim].label} : score dans les journaux sélectionnés moins le score de la même personne dans tous les autres journaux, chaque année${S.ci ? ", avec intervalles à 95 %" : ""}. Au-dessus de 0 : ${DIMS[S.dim].pos}, plus ici qu’ailleurs. Une ligne plate signifie que la personne a évolué de la même façon partout.`);
+  if (gapOn()) $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}: score in the selected newspapers minus the same person’s score in all other newspapers, ${S.res === "year" ? "each year" : S.res === "quarter" ? "each quarter" : "each month"}${S.ci ? ", with 95% intervals" : ""}. Above 0: ${DIMS[S.dim].pos} more here than elsewhere. A flat line means the person moved the same way everywhere.`,
+    `${per} · ${DIMS[S.dim].label} : score dans les journaux sélectionnés moins le score de la même personne dans tous les autres journaux, ${S.res === "year" ? "chaque année" : S.res === "quarter" ? "chaque trimestre" : "chaque mois"}${S.ci ? ", avec intervalles à 95 %" : ""}. Au-dessus de 0 : ${DIMS[S.dim].pos}, plus ici qu’ailleurs. Une ligne plate signifie que la personne a évolué de la même façon partout.`);
   drawTime(data); drawMentions(data);
 }
 $("reshint").addEventListener("click", e => { if (e.target.closest("[data-act=all]")) setOutlets(new Set([...S.osel, ...availSet()])); });
@@ -1683,19 +1717,27 @@ function renderChips() {
   $("chips").innerHTML = S.sel.map((k, i) => { const e = ent(k);
     return `<span class="chip"><i style="background:var(${SERIES[i]})"></i>${esc(e[1])} ${e[2] != null ? `<small>${nf.format(e[2])}</small>` : ""}<button type="button" data-k="${esc(k)}" aria-label="${L("Remove", "Retirer")} ${esc(e[1])}">×</button></span>`; }).join("");
   $("q").disabled = S.sel.length >= MAXP;
-  $("q").placeholder = S.sel.length >= MAXP ? L("Remove a person to add another", "Retirez-en une pour en ajouter") : L("e.g. Mélenchon, Bardella, Darmanin…", "p. ex. Mélenchon, Bardella, Darmanin…");
+  $("q").placeholder = S.sel.length >= MAXP ? L("Remove a person to add another", "Retirez-en une pour en ajouter")
+    : S.noIndex ? L("No name list: type a full name, then « Look up »", "Pas de liste de noms : tapez un nom complet, puis « Chercher »")
+    : L("e.g. Mélenchon, Bardella, Darmanin…", "p. ex. Mélenchon, Bardella, Darmanin…");
 }
 $("chips").addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (!b) return; S.sel = S.sel.filter(k => k !== b.dataset.k); render(); });
 
 // search
 let sugg = [], active = -1;
+// Every typed word must start a word of the name ("jean-l mél"); if that gives fewer than 10, names that merely
+// contain the letters typed, spaces ignored, come next ("lepen", "lench"). Most covered first in each group.
 function search(q) {
-  const k = key(q); if (!k) return [];
-  const toks = k.split(" "), out = [];
+  const k = key(q); if (!k || !S.index) return [];
+  const toks = k.split(" "), flat = k.replace(/ /g, ""), out = [], seen = new Set();
   for (const e of S.index.names) {
     if (S.sel.includes(e[0])) continue;
     const words = e[0].split(" ");
     if (!toks.every(t => words.some(w => w.startsWith(t)))) continue;
+    out.push(e); seen.add(e[0]); if (out.length >= 10) break;
+  }
+  if (out.length < 10 && flat.length >= 3) for (const e of S.index.names) {
+    if (seen.has(e[0]) || S.sel.includes(e[0]) || !e[0].replace(/ /g, "").includes(flat)) continue;
     out.push(e); if (out.length >= 10) break;
   }
   // any name can be looked up in the API, even one missing from the index
@@ -1704,8 +1746,10 @@ function search(q) {
 }
 function showSugg() {
   const ul = $("suggest"), q = $("q");
-  if (!sugg.length) { ul.hidden = true; q.setAttribute("aria-expanded", "false"); if (q.value.trim()) { ul.innerHTML = `<li aria-disabled="true"><span class="alt">${L("No name in 30+ articles matches", "Aucun nom présent dans 30 articles ou plus ne correspond")}</span></li>`; ul.hidden = false; } return; }
-  ul.innerHTML = sugg.map((e, i) => e[5] ? `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${L("Look up", "Chercher")} « ${esc(e[1])} »</span><span class="n">${L("every name", "tous les noms")}</span></li>` : `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${esc(e[1])}${e[4].length ? ` <span class="alt">· ${esc(e[4][0].replace(/ /g, " "))}</span>` : ""}</span><span class="n">${nf.format(e[2])} art.</span></li>`).join("");
+  if (!sugg.length) { ul.hidden = true; q.setAttribute("aria-expanded", "false");
+    if (q.value.trim()) { ul.innerHTML = `<li aria-disabled="true"><span class="alt">${!S.index ? L("The name list is still loading…", "La liste des noms se charge…")
+      : L("No name in the list matches: type at least 3 letters to look it up", "Aucun nom de la liste ne correspond : tapez au moins 3 lettres pour le chercher")}</span></li>`; ul.hidden = false; } return; }
+  ul.innerHTML = sugg.map((e, i) => e[5] ? `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${L("Look up", "Chercher")} « ${esc(e[1])} »</span><span class="n">${L("every name", "tous les noms")}</span></li>` : `<li role="option" id="opt${i}" aria-selected="${i === active}" data-k="${esc(e[0])}"><span>${esc(e[1])}${Array.isArray(e[4]) && e[4].length ? ` <span class="alt">· ${esc(String(e[4][0]))}</span>` : ""}</span><span class="n">${e[2] != null ? nf.format(e[2]) + " art." : ""}</span></li>`).join("");
   ul.hidden = false; q.setAttribute("aria-expanded", "true");
   if (active >= 0) q.setAttribute("aria-activedescendant", "opt" + active); else q.removeAttribute("aria-activedescendant");
 }
@@ -1722,19 +1766,26 @@ async function pick(k, label) {
   }
   S.sel.push(k); render();
 }
-$("q").addEventListener("input", e => { sugg = search(e.target.value); active = sugg.length ? 0 : -1; showSugg(); });
+const suggest = () => { sugg = search($("q").value); active = sugg.length ? 0 : -1; showSugg(); };
+$("q").addEventListener("input", suggest);
+// coming back to a box that still holds text shows its suggestions again
+$("q").addEventListener("focus", () => { if ($("q").value.trim()) suggest(); });
 $("q").addEventListener("keydown", e => {
   if (e.key === "ArrowDown") { active = Math.min(active + 1, sugg.length - 1); showSugg(); e.preventDefault(); }
   else if (e.key === "ArrowUp") { active = Math.max(active - 1, 0); showSugg(); e.preventDefault(); }
   else if (e.key === "Enter") { if (sugg[active]) pick(sugg[active][0], sugg[active][1]); e.preventDefault(); }
-  else if (e.key === "Escape") { sugg = []; showSugg(); }
+  else if (e.key === "Escape") { sugg = []; $("suggest").hidden = true; $("q").setAttribute("aria-expanded", "false"); }
 });
 $("suggest").addEventListener("pointerdown", e => { const li = e.target.closest("li[data-k]"); if (li) { e.preventDefault(); const x = sugg.find(s => s[0] === li.dataset.k); pick(li.dataset.k, x && x[1]); } });
-$("q").addEventListener("blur", () => setTimeout(() => { $("suggest").hidden = true; $("q").setAttribute("aria-expanded", "false"); }, 120));
+// close on leaving the box, unless the focus came straight back
+$("q").addEventListener("blur", () => setTimeout(() => { if (document.activeElement === $("q")) return; $("suggest").hidden = true; $("q").setAttribute("aria-expanded", "false"); }, 120));
 
 function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v))); }
 $("dim").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.dim = b.dataset.v; setSeg("dim", S.dim); render(); });
 $("res").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; S.res = b.dataset.v; setSeg("res", S.res); render(); });
+// the niche options sit in a fold; remember whether it was left open
+try { if (localStorage.getItem("pp-more") === "1") $("more").open = true; } catch (e) {}
+$("more").addEventListener("toggle", () => { try { localStorage.setItem("pp-more", $("more").open ? "1" : "0"); } catch (e) {} });
 $("minn").addEventListener("change", e => { S.minn = +e.target.value; render(); });
 setSeg("ci", S.ci ? "on" : "off");
 // close the score help on outside click or Escape
@@ -1854,7 +1905,8 @@ const FR = {
   "Views": "Vues", "Light theme": "Thème clair", "Dark theme": "Thème sombre", "Filters": "Filtres", "From year": "Année de début", "To year": "Année de fin",
   "Minimum articles per point": "Minimum d’articles par point", "95% intervals": "Intervalles à 95 %", "What do the scores mean?": "Que mesurent ces scores ?", "Hide": "Masquer", "Raw": "Bruts", "Gap with other papers": "Écart avec les autres journaux", "Relative to each paper": "Relatifs à chaque journal", "Rank people by": "Classer les personnes par",
   "People at each end": "Personnes à chaque bout", "Minimum articles": "Minimum d’articles", "Person shown": "Personne affichée",
-  "Sections": "Rubriques", "2027 presidential": "Présidentielle 2027", "Candidates": "Candidats", "Campaign period": "Période de campagne",
+  "More options": "Plus d’options", "Rows": "Lignes", "Sections": "Rubriques", "Mostly in other sections": "Surtout dans d’autres rubriques", "Included": "Incluses", "Excluded": "Exclues",
+  "People mostly covered in other sections": "Personnes surtout présentes dans d’autres rubriques", "2027 presidential": "Présidentielle 2027", "Candidates": "Candidats", "Campaign period": "Période de campagne",
   "3 months": "3 mois", "6 months": "6 mois", "12 months": "12 mois", "24 months": "24 mois",
   "Follow these candidates over time": "Suivre ces candidats dans le temps", "Overall score of each candidate": "Score d’ensemble de chaque candidat",
   "Contrasts between newspapers": "Contrastes entre journaux", "Net of paper and candidate": "Net du journal et du candidat", "Contrast shown": "Contraste affiché",
@@ -1887,6 +1939,7 @@ function start(ix) {
   outletUI();
   S.sel = S.noIndex ? DEFAULT.slice() : DEFAULT.filter(k => S.byKey.has(k));
   S.nNames = ix.names.length; $("status").textContent = statusText();
+  if (document.activeElement === $("q") && $("q").value.trim()) suggest();
   setTab(location.hash.slice(1));
 }
 // Start-up: /newspapers_portraits gives the newspapers and their sections; /names_portrait feeds the search box
@@ -1905,20 +1958,27 @@ async function loadNewspapers() {
 }
 // JSON ({names: [[key, name, n, …]]}, or a list of objects) or CSV with key, name/nom, n_articles[, first_month, last_month]
 function toIndex(t) {
-  t = t.trim(); let names, years = null;
+  t = t.replace(/^\ufeff/, "").trim(); let names, years = null;
   if (t[0] === "{" || t[0] === "[") {
-    const j = JSON.parse(t), arr = Array.isArray(j) ? j : j.names || [];
-    names = arr.map(e => Array.isArray(e) ? e : [e.key, e.name || e.nom || titleOf(e.key), e.n_articles ?? e.n ?? null, null, []]);
+    let j = JSON.parse(t);
+    if (!Array.isArray(j) && Array.isArray(j.key)) j = j.key.map((k, i) => Object.fromEntries(Object.keys(j).map(c => [c, j[c][i]])));   // column-wise
+    const arr = Array.isArray(j) ? j : j.names || j.data || [];
+    names = arr.map(e => Array.isArray(e) ? e : [e.key, e.name || e.nom || titleOf(e.key), e.n_articles ?? e.n ?? null, e.off_section ?? null, []]);
     if (j.years) years = j.years;
+    if (!names.length || !names[0][0]) throw new Error(`names_portrait: no names found in the JSON (${t.slice(0, 80)}…)`);
   } else {
     const rows = parseCSV(t), h = rows[0].map(x => x.trim().toLowerCase()), at = (...a) => a.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
-    const ki = at("key"), mi = at("name", "nom"), ai = at("n_articles", "n"), fi = at("first_month"), li = at("last_month");
+    const ki = at("key"), mi = at("name", "nom"), ai = at("n_articles", "n"), fi = at("first_month"), li = at("last_month"), oi = at("off_section");
     if (ki < 0) throw new Error(`names_portrait has no key column (${rows[0].join(", ")})`);
+    if (rows.length < 2) throw new Error("names_portrait returned no names");
     const body = rows.slice(1).filter(r => r[ki]);
-    names = body.map(r => [r[ki], mi >= 0 && r[mi] ? r[mi] : titleOf(r[ki]), ai >= 0 && r[ai] !== "" ? +r[ai] : null, null, []]);
+    names = body.map(r => [r[ki], mi >= 0 && r[mi] ? r[mi] : titleOf(r[ki]), ai >= 0 && r[ai] !== "" ? +r[ai] : null, oi >= 0 && r[oi] !== "" ? r[oi] : null, []]);
     if (fi >= 0 && li >= 0) { let y0 = 1e4, y1 = 0; for (const r of body) { const f = +String(r[fi]).slice(0, 4), l = +String(r[li]).slice(0, 4); if (f && f < y0) y0 = f; if (l > y1) y1 = l; }
       if (y1) years = [y0, y1]; }
   }
+  // every entry: [key, name (text), articles (number or null), off_section, other spellings (array)]
+  names = names.filter(e => e && e[0]).map(e => [String(e[0]), e[1] != null && e[1] !== "" ? String(e[1]) : titleOf(String(e[0])),
+    e[2] != null && e[2] !== "" && Number.isFinite(+e[2]) ? +e[2] : null, e[3] ?? null, Array.isArray(e[4]) ? e[4] : []]);
   names.sort((a, b) => (b[2] || 0) - (a[2] || 0));   // the search keeps the first matches: most covered first
   return {names, years: years || [1944, new Date().getFullYear()]};
 }
@@ -1926,7 +1986,8 @@ Promise.allSettled([fetchText(NAMES_URL).then(toIndex), loadNewspapers()]).then(
   if (np.status === "rejected") { console.warn("newspapers_portraits:", np.reason); S.outlets = []; S.npSecs = new Map(); }
   if (ix.status === "fulfilled") return start(ix.value);
   console.warn("names_portrait:", ix.reason);
-  getJSON(DATA + "index.json").then(start, () => { S.noIndex = ix.reason.message; start({names: [], years: [1944, new Date().getFullYear()]}); });
+  S.namesErr = ix.reason.message;
+  getJSON(DATA + "index.json").then(start, () => { S.noIndex = `${NAMES_URL}: ${ix.reason.message}`; start({names: [], years: [1944, new Date().getFullYear()]}); });
 });
 })();
 </script>
