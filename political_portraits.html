@@ -213,6 +213,9 @@ html[lang="fr"] [data-l="en"], html[lang="en"] [data-l="fr"] { display: none !im
 .mcard a, .mlist a { color: var(--focus); }
 .mlist { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
 details.cb summary { cursor: pointer; color: var(--focus); font-weight: 600; }
+.rk-note { margin-top: 14px; max-width: 75ch; color: var(--fg2); font-size: 14.5px; }
+.rk-note p { margin: 8px 0 0; }
+.rk-note .eq { font: 14px var(--f-data); color: var(--fg); padding-left: 1.2em; }
 details.cb .cbtext { white-space: pre-wrap; font: 15px/1.45 var(--f-body); background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; margin: 10px 0 0; max-height: 520px; overflow-y: auto; }
 .cb-gap { height: 10px; }
 .cb-l { margin-bottom: 2px; }
@@ -309,6 +312,8 @@ details.cb .cbtext { white-space: normal; }
         <div class="field" data-tabs="top"><span>At least</span><select id="rk-min" aria-label="Minimum articles">
             <option value="50">50 articles</option><option value="200">200 articles</option><option value="500" selected>500 articles</option>
             <option value="2000">2,000 articles</option><option value="10000">10,000 articles</option></select></div>
+        <div class="field" data-tabs="top"><span>Estimate</span><div class="seg" id="rk-blup" role="group" aria-label="Estimate">
+            <button type="button" data-v="blup" aria-pressed="true">Shrunk (BLUP)</button><button type="button" data-v="raw" aria-pressed="false">Plain averages</button></div></div>
         <div class="field" id="rk-off-f" data-tabs="top"><span>Mostly in other sections</span><div class="seg" id="rk-off" role="group" aria-label="People mostly covered in other sections">
             <button type="button" data-v="show" aria-pressed="true">Included</button><button type="button" data-v="hide" aria-pressed="false">Excluded</button></div></div>
         <div class="field" data-tabs="corpora pres"><span>Heatmap colour</span><div class="seg" id="hcolor" role="group" aria-label="Heatmap colour">
@@ -347,6 +352,24 @@ details.cb .cbtext { white-space: normal; }
       <div class="cardhead"><h2 id="t-rank">Best and worst judged</h2></div>
       <div class="sub" id="rk-sub">Loading the ranking…</div>
       <div class="chart rk-fig" id="rank"></div>
+      <details class="cb rk-note" id="rk-how">
+        <summary><span data-l="en">How the shrunk estimates (BLUP) are computed</span><span data-l="fr" lang="fr">Comment les estimations contractées (BLUP) sont calculées</span></summary>
+        <div data-l="en">
+          <p>Ranked by their plain average, the two ends of the list fill up with people who have few articles: with little data, an average can land far from 0 by chance. The shrunk estimate corrects this by treating each person’s true score θ<sub>i</sub> as drawn from a common distribution, with mean μ and variance τ² across people. Their plain average y<sub>i</sub> measures θ<sub>i</sub> with sampling variance s<sub>i</sub>², the squared standard error behind the 95% intervals (articles as clusters). The best linear unbiased predictor (BLUP) of θ<sub>i</sub> is then</p>
+          <p class="eq">θ̂<sub>i</sub> = μ + B<sub>i</sub> (y<sub>i</sub> − μ), &nbsp; B<sub>i</sub> = τ² / (τ² + s<sub>i</sub>²)</p>
+          <p>B<sub>i</sub> is the weight given to the person’s own data: close to 1 with thousands of articles, lower with few, in which case the score is pulled towards the mean. τ² is estimated by restricted maximum likelihood (REML) over everyone in the current list, separately for each score, and μ is the precision-weighted mean Σ w<sub>i</sub> y<sub>i</sub> / Σ w<sub>i</sub>, with w<sub>i</sub> = 1 / (τ² + s<sub>i</sub>²). The interval drawn is θ̂<sub>i</sub> ± 1.96 √(B<sub>i</sub> s<sub>i</sub>² + (1 − B<sub>i</sub>)² / Σ w<sub>i</sub>): it counts the uncertainty on μ, not on τ². Rings mark the plain averages; people are ranked by θ̂<sub>i</sub>.</p>
+          <p>Before any of this, two guards. The standard error s<sub>i</sub> is clustered by article, and the number of articles that really count is n<sub>eff</sub> = W² / Σ<sub>d</sub> W<sub>d</sub>², where W<sub>d</sub> is the total weight of article d: a score spread evenly over 100 articles has n<sub>eff</sub> = 100, one resting on a single article has n<sub>eff</sub> ≈ 1, however many articles mention the name. The variance is multiplied by n<sub>eff</sub> / (n<sub>eff</sub> − 1), and a point with n<sub>eff</sub> &lt; 2, whose clustered variance cannot be estimated, is not drawn, here or in the other tabs. In the ranking, entities with fewer than 30 effective articles are left out: this mostly removes bylines, clubs and institutions whose weight is near 0 almost everywhere, so that one confident false positive would otherwise make their whole score. Two more tests catch bylines and credits, over at least 30 mentions in the selection: the mean relevance of a mention, W / n<sub>mentions</sub> (a byline under every article scores about 0.01%), and how often the name has a role in its sentence, as agent, patient or oblique (a signature never does, even when the model is fooled by the review it ends). Below 5% relevance or 10% of mentions with a role, a name is not drawn anywhere. When the ranking route does not send these figures, the names at both ends are checked against their own data, and the list is redone without those that fail.</p>
+          <p>Shrinkage is relative to the list shown: changing the period, newspapers, sections or minimum number of articles changes μ and τ², hence everyone’s estimate. With relative scores on, it applies to the relative scores.</p>
+        </div>
+        <div data-l="fr" lang="fr">
+          <p>Classés selon leur moyenne simple, les deux bouts de la liste se remplissent de personnes citées dans peu d’articles : avec peu de données, une moyenne peut s’écarter de 0 par hasard. L’estimation contractée corrige cela en traitant le vrai score θ<sub>i</sub> de chaque personne comme tiré d’une distribution commune, de moyenne μ et de variance τ² entre personnes. Sa moyenne simple y<sub>i</sub> mesure θ<sub>i</sub> avec une variance d’échantillonnage s<sub>i</sub>², le carré de l’erreur type derrière les intervalles à 95 % (articles comme grappes). Le meilleur prédicteur linéaire sans biais (BLUP) de θ<sub>i</sub> est alors</p>
+          <p class="eq">θ̂<sub>i</sub> = μ + B<sub>i</sub> (y<sub>i</sub> − μ), &nbsp; B<sub>i</sub> = τ² / (τ² + s<sub>i</sub>²)</p>
+          <p>B<sub>i</sub> est le poids donné aux données de la personne : proche de 1 avec des milliers d’articles, plus faible avec peu, et le score est alors ramené vers la moyenne. τ² est estimé par maximum de vraisemblance restreint (REML) sur toutes les personnes de la liste affichée, séparément pour chaque score, et μ est la moyenne pondérée par la précision Σ w<sub>i</sub> y<sub>i</sub> / Σ w<sub>i</sub>, avec w<sub>i</sub> = 1 / (τ² + s<sub>i</sub>²). L’intervalle tracé est θ̂<sub>i</sub> ± 1,96 √(B<sub>i</sub> s<sub>i</sub>² + (1 − B<sub>i</sub>)² / Σ w<sub>i</sub>) : il compte l’incertitude sur μ, pas sur τ². Les anneaux marquent les moyennes simples ; le classement suit θ̂<sub>i</sub>.</p>
+          <p>Avant cela, deux garde-fous. L’erreur type s<sub>i</sub> est calculée par grappes d’articles, et le nombre d’articles qui comptent vraiment est n<sub>eff</sub> = W² / Σ<sub>d</sub> W<sub>d</sub>², où W<sub>d</sub> est le poids total de l’article d : un score réparti également sur 100 articles a n<sub>eff</sub> = 100, un score qui repose sur un seul article a n<sub>eff</sub> ≈ 1, quel que soit le nombre d’articles qui citent le nom. La variance est multipliée par n<sub>eff</sub> / (n<sub>eff</sub> − 1), et un point avec n<sub>eff</sub> &lt; 2, dont la variance par grappes n’est pas estimable, n’est pas tracé, ici comme dans les autres onglets. Dans le classement, les entités qui ont moins de 30 articles effectifs sont exclues : cela retire surtout des signatures, des clubs et des institutions dont le poids est quasi nul presque partout, et dont un seul faux positif très confiant ferait sinon tout le score. Deux autres tests repèrent les signatures et les crédits, sur au moins 30 mentions dans la sélection : la pertinence moyenne d’une mention, W / n<sub>mentions</sub> (une signature en pied de chaque article tombe vers 0,01 %), et la part des mentions où le nom a un rôle dans sa phrase, agent, patient ou oblique (une signature n’en a jamais, même quand le modèle se laisse tromper par la critique qu’elle conclut). Sous 5 % de pertinence ou 10 % de mentions avec un rôle, un nom n’est tracé nulle part. Quand la route du classement n’envoie pas ces chiffres, les noms des deux bouts sont vérifiés sur leurs propres données, et la liste est refaite sans ceux qui échouent.</p>
+          <p>La contraction dépend de la liste affichée : changer la période, les journaux, les rubriques ou le minimum d’articles change μ et τ², donc l’estimation de chacun. Avec les scores relatifs, elle porte sur les scores relatifs.</p>
+        </div>
+        <p id="rk-blup-est"></p>
+      </details>
     </section>
   </div>
 
@@ -475,7 +498,8 @@ details.cb .cbtext { white-space: normal; }
     <p><b>Valence</b> is P(positive) − P(negative) judgement of the person. <b>Extremism</b> is P(framed as radical or extreme) − P(framed as moderate).
       <b>Momentum</b> is P(rising in the race) − P(declining). All three run from −1 to +1. Most passages carry no judgement, so averages sit close to 0.</p>
     <p>A point averages every scored passage, weighted by the probability that the passage says something about the person. Long portraits weigh more than passing mentions.
-      Shaded bands and whiskers are 95% intervals, with articles as the resampling unit.</p>
+      Shaded bands and whiskers are 95% intervals, with articles as the resampling unit, widened by n<sub>eff</sub> / (n<sub>eff</sub> − 1) where n<sub>eff</sub> = W² / Σ W<sub>d</sub>² is the effective number of articles; a point resting on fewer than 2 effective articles is not drawn. A name that is almost never the subject of its passages (relevance under 5%) or almost never has a role in its sentence (under 10% of mentions) is a byline, a credit, a club or a place: it is not drawn at all.</p>
+    <p>The Top / Flop ranking uses shrunk estimates by default: each person’s average is pulled towards the mean of the list, the more so the fewer their articles. This is the best linear unbiased predictor (BLUP) of a random-effects model whose between-person variance is estimated by REML; the note under the ranking gives the formula. Without it, the ends of the list would be crowded by people whose averages are extreme only because they rest on few articles.</p>
     <p>A person is named by the full name in their coreference chain. A chain that only says « Mélenchon » or « M. Mélenchon » takes the article’s own
       « Jean-Luc Mélenchon » when there is exactly one; otherwise the person that family name stands for that year, when one person holds at least 90% of the
       articles naming someone « … Mélenchon ». Le Pen, place names, and family names that are also first names (Philippe, Bertrand) are never resolved that way.
@@ -489,7 +513,8 @@ details.cb .cbtext { white-space: normal; }
     <p>La <b>valence</b> vaut P(jugement positif) − P(jugement négatif) sur la personne. L’<b>extrémisme</b> vaut P(présentée comme radicale ou extrême) − P(présentée comme modérée).
       La <b>dynamique</b> vaut P(en progression dans la course) − P(en recul). Les trois vont de −1 à +1. La plupart des passages ne portent aucun jugement : les moyennes restent proches de 0.</p>
     <p>Un point fait la moyenne de tous les passages notés, pondérés par la probabilité que le passage dise quelque chose de la personne. Les longs portraits pèsent plus que les mentions en passant.
-      Les bandes et les moustaches sont des intervalles à 95 %, l’article étant l’unité de rééchantillonnage.</p>
+      Les bandes et les moustaches sont des intervalles à 95 %, l’article étant l’unité de rééchantillonnage, élargis par n<sub>eff</sub> / (n<sub>eff</sub> − 1), où n<sub>eff</sub> = W² / Σ W<sub>d</sub>² est le nombre effectif d’articles ; un point qui repose sur moins de 2 articles effectifs n’est pas tracé. Un nom qui n’est presque jamais le sujet de ses passages (pertinence sous 5 %) ou n’a presque jamais de rôle dans sa phrase (moins de 10 % des mentions) est une signature, un crédit, un club ou un lieu : il n’est pas tracé du tout.</p>
+    <p>Le classement Top / Flop utilise par défaut des estimations contractées : la moyenne de chaque personne est ramenée vers celle de la liste, d’autant plus qu’elle repose sur peu d’articles. C’est le meilleur prédicteur linéaire sans biais (BLUP) d’un modèle à effets aléatoires dont la variance entre personnes est estimée par REML ; la note sous le classement donne la formule. Sans cela, les bouts de la liste seraient encombrés de personnes dont la moyenne n’est extrême que parce qu’elle repose sur peu d’articles.</p>
     <p>Une personne est désignée par le nom complet de sa chaîne de coréférence. Une chaîne qui ne dit que « Mélenchon » ou « M. Mélenchon » reprend le
       « Jean-Luc Mélenchon » de l’article quand il y en a exactement un ; sinon, la personne que ce nom de famille désigne cette année-là, si une seule personne réunit au moins 90 % des
       articles nommant quelqu’un « … Mélenchon ». Le Pen, les noms de lieux et les noms de famille qui sont aussi des prénoms (Philippe, Bertrand) ne sont jamais résolus ainsi.
@@ -598,7 +623,7 @@ function parseCSV(t) {
 // W = Σw, WW = Σ_d W_d² (one W_d per article), and per score S = Σw·score, SS = Σ_d S_d², WS = Σ_d W_d·S_d.
 const ALIAS = {nom: ["nom", "name"], month: ["month", "mois", "yyyymm", "ym", "yearmonth", "date"], year: ["year", "annee", "année"],
   newspaper: ["newspaper", "outlet", "journal", "source", "media"], section: ["section", "rubrique"],
-  n_docs: ["n_articles", "n_docs", "n_doc", "articles"], W: ["w", "weight", "sum_w", "w_sum"], WW: ["ww", "w2", "sum_w2", "sum_ww", "ww_sum"]};
+  n_docs: ["n_articles", "n_docs", "n_doc", "articles"], n_ment: ["n_mentions", "mentions"], agent: ["agent"], patient: ["patient"], obl: ["obl"], W: ["w", "weight", "sum_w", "w_sum"], WW: ["ww", "w2", "sum_w2", "sum_ww", "ww_sum"]};
 const DIMA = {valence: ["valence"], extremisme: ["extremisme", "extremism"], dynamique: ["dynamique", "momentum"]};
 function columns(head) {
   const h = head.map(x => x.trim().toLowerCase()), find = al => { for (const a of al) { const j = h.indexOf(a); if (j >= 0) return j; } return -1; };
@@ -624,11 +649,17 @@ function outletIdx(code, sec) {
 }
 // CSV rows → one columnar store of cells (outlet index, "YYYY-MM", weights, scores)
 function toCells(rows, c) {
-  const R = {o: [], s: [], ym: [], W: [], WW: [], n_docs: []}; for (const dm of DK) for (const p of SUMS) R[p + dm] = [];
+  const R = {o: [], s: [], ym: [], W: [], WW: [], n_docs: [], mm: new Map(), roles: c.agent >= 0}; for (const dm of DK) for (const p of SUMS) R[p + dm] = [];
   const num = (r, j) => { if (j < 0 || r[j] == null || r[j] === "") return NaN; return +r[j]; };
   for (const r of rows) {
     const np = String(r[c.newspaper] ?? "").trim(), sec = c.section >= 0 ? String(r[c.section] ?? "").trim() : "politique";
     const ym = ymOf(r, c), W = num(r, c.W);
+    if (np && ym) {   // mentions and roles of every row, including those whose passages got no weight at all
+      const o = outletIdx(np, sec), y = +ym.slice(0, 4), kk = o + "|" + sec + "|" + y;
+      const e = R.mm.get(kk) || R.mm.set(kk, {o, s: sec, y, M: 0, W: 0, roles: 0}).get(kk);
+      const m = num(r, c.n_ment) || num(r, c.n_docs) || 0;
+      e.M += m; e.W += W > 0 ? W : 0; e.roles += ["agent", "patient", "obl"].reduce((a, k) => a + (num(r, c[k]) || 0), 0);
+    }
     if (!np || !ym || !(W > 0)) continue;
     const ww = num(r, c.WW), n = num(r, c.n_docs);
     R.o.push(outletIdx(np, sec)); R.s.push(sec); R.ym.push(ym); R.W.push(W); R.WW.push(Number.isFinite(ww) ? ww : 0); R.n_docs.push(Number.isFinite(n) ? n : 0);
@@ -666,7 +697,8 @@ function loadName(k) {
       const R = toCells(rows, c); if (!R.o.length) return undefined;
       register(k, c.nom >= 0 ? rows[0][c.nom] : null, R.n_docs.reduce((a, b) => a + b, 0));
       refreshOutlets(); S.done.add(k);
-      return person(R);
+      const d = person(R); d.mm = [...R.mm.values()]; d.hasRoles = R.roles;
+      return d;
     });
     p.catch(() => S.cache.delete(k));
     S.cache.set(k, p);
@@ -719,14 +751,45 @@ const key = s => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().repla
 // API cells carry sums: pooling adds them, then R = S/W and, with articles as clusters,
 // Var(R) = (SS − 2R·WS + R²·WW) / W². Cells without the score are skipped.
 // Cells that carry (R, se) instead are pooled with the formula below.
+// Effective number of articles behind a pooled score: n_eff = W² / WW (Kish), WW = Σ_d W_d² over articles. A point whose
+// weight sits on one article (n_eff < 2, e.g. one confident false positive among near-zero weights) has no estimable
+// clustered variance (it comes out as exactly 0): it is dropped (merge → null). Above that, the variance gets the
+// small-sample factor n_eff / (n_eff − 1), CR1 with effective clusters, so points carried by a few articles widen.
+const NEFF_MIN = 2;
+// Is the name portrayed at all? Two shares over the person's mentions, within the period, sections and newspapers selected:
+//  relevance = W / n_mentions: the mean weight of a mention, W being the probability that the passage says something about
+//    the person (a mention that produced no passage counts as 0). Most of each mention for a politician; ~0.01% for a byline
+//    printed under every article (« Willy Ganne », Les Échos), ~1% for a club whose passages were filtered out (SLUC Nancy).
+//  syntax = (agent + patient + obl) / n_mentions: how often the name has a role in its sentence. About half the mentions or
+//    more for a politician; ~0 for a signature, even when the scoring model is fooled by the review it ends and gives it
+//    weight ~1 with a glowing valence (« Franck Colombani », Le Monde culture).
+// Over at least 30 mentions, a name below either threshold is not drawn, and the page says why.
+const PORTRAYED_MIN = 0.05, SYNTAX_MIN = 0.10, PORTRAYED_N = 30;
+function portrayal(d) {
+  let M = 0, W = 0, roles = 0;
+  for (const e of d.mm || []) { if (!inPeriod(e.y) || !S.secs.has(e.s) || (S.oset && !S.oset.has(e.o))) continue; M += e.M; W += e.W; roles += e.roles; }
+  const m = merge(d.y, yearCells(d), S.dim);
+  return {M, relevance: M ? W / M : NaN, syntax: d.hasRoles && M ? roles / M : NaN, neff: m ? m.neff : W > 0 ? 1 : NaN};
+}
+const notPortrayed = p => p.M >= PORTRAYED_N && (p.relevance < PORTRAYED_MIN || p.syntax < SYNTAX_MIN);
+const unportrayed = d => !!d && !!d.mm && notPortrayed(portrayal(d));
+const relPct = x => (x === 0 ? "0" : dec((100 * x).toFixed(x < 0.001 ? 3 : x < 0.01 ? 2 : x < 0.1 ? 1 : 0))) + L("%", " %");
+function skipNote(skipped) {
+  const list = skipped.map(x => { const p = portrayal(x.d);
+    return `${displayName(x.k)} (${L("relevance", "pertinence")} ${relPct(p.relevance)}${Number.isFinite(p.syntax) ? `, ${L("role in the sentence", "rôle dans la phrase")} ${relPct(p.syntax)}` : ""})`; }).join(", "), one = skipped.length === 1;
+  return L(`Not drawn: ${list}. ${one ? "This name is" : "These names are"} almost never the subject of the passages ${one ? "it appears" : "they appear"} in, or never ${one ? "plays" : "play"} a part in the sentence: probably a byline, a credit, an organisation, a place, or a name cited mostly in lists (line-ups, results), whose scores would rest on stray passages. For a politician, relevance and role are usually well above half of the mentions.`,
+    `Non tracé${one ? "" : "s"} : ${list}. ${one ? "Ce nom n’est" : "Ces noms ne sont"} presque jamais le sujet des passages où ${one ? "il apparaît" : "ils apparaissent"}, ou n’${one ? "a" : "ont"} jamais de rôle dans la phrase : sans doute une signature, un crédit, une organisation, un lieu, ou un nom cité surtout dans des listes (compositions d’équipe, résultats), dont les scores reposeraient sur des passages isolés. Pour un responsable politique, pertinence et rôle dépassent en général la moitié des mentions.`);
+}
+const crFactor = neff => Number.isFinite(neff) ? neff / (neff - 1) : 1;
 function merge(c, idx, dim) {
   const cs = c["S_" + dim];
   if (cs) {
     const ss = c["SS_" + dim], ws = c["WS_" + dim]; let W = 0, S = 0, SS = 0, WS = 0, WW = 0, n = 0;
-    for (const i of idx) { if (!Number.isFinite(cs[i])) continue; W += c.W[i]; S += cs[i]; SS += ss[i] || 0; WS += ws[i] || 0; WW += c.WW[i]; n += c.n_docs[i]; }
+    for (const i of idx) { if (!Number.isFinite(cs[i])) continue; W += c.W[i]; S += cs[i]; SS += ss[i] || 0; WS += ws[i] || 0; WW += c.WW[i] || 0; n += c.n_docs[i]; }
     if (!(W > 0)) return null;
-    const R = S / W;
-    return {R, se: Math.sqrt(Math.max(SS - 2 * R * WS + R * R * WW, 0)) / W, n};
+    const R = S / W, neff = WW > 0 ? W * W / WW : Infinity;   // no WW in the data: no check, as before
+    if (neff < NEFF_MIN) return null;
+    return {R, se: Math.sqrt(Math.max(SS - 2 * R * WS + R * R * WW, 0) * crFactor(neff)) / W, n, neff};
   }
   let W = 0, WR = 0, n = 0; const ok = [];
   for (const i of idx) { const x = c[dim][i]; if (!Number.isFinite(x)) continue; ok.push(i); W += c.W[i]; WR += c.W[i] * x; n += c.n_docs[i]; }
@@ -1093,7 +1156,12 @@ function drawSummary(data) {
 }
 
 // ranking: the most mentioned people of the selected period and newspapers, three panels sharing the row order
-const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false,
+const RK = {cache: new Map(), tok: 0, ends: 15, all: false, min: 500, byN: false, fit: {},
+  // an entity needs this many effective articles (n_eff = W² / WW) to be ranked: it removes signatures, clubs,
+  // institutions… whose weight is ~0 almost everywhere and whose score rests on one or two confident false positives
+  minEff: 30, warned: false, verdict: new Map(),
+  // shrunk estimates (BLUP) by default; "off" in localStorage keeps plain averages
+  blup: (() => { try { return localStorage.getItem("pp-blup") !== "off"; } catch (e) { return true; } })(),
   // off by default: the API only works out who is off-section when asked (section_flag=True), which is slower
   offHide: (() => { try { return localStorage.getItem("pp-off2") === "hide"; } catch (e) { return false; } })()};
 // off_section (from /rankings_portraits, else /names_portraits): either a flag (1/true) for people who belong elsewhere,
@@ -1112,10 +1180,14 @@ function rankQ() { const p = {from: S.y0, to: S.y1, min: RK.min, section: [...S.
 // Both become {key, name, n, R: {score: []}, se: {score: []}, E: {score: []} or null}; E is the relative-score baseline.
 function rankTable(t) {
   t = t.trim();
-  const out = {key: [], name: [], n: [], off: [], R: {}, se: {}, E: null}; for (const dm of DK) { out.R[dm] = []; out.se[dm] = []; }
+  const out = {key: [], name: [], n: [], off: [], neff: [], share: [], syn: [], hasNeff: false, hasShare: false, hasSyn: false, R: {}, se: {}, E: null}; for (const dm of DK) { out.R[dm] = []; out.se[dm] = []; }
   if (t[0] === "{") {
     const d = JSON.parse(t); d.n_docs = d.n_articles; if (d.EW) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
+    out.hasNeff = !!d.WW; out.hasShare = !!d.n_mentions; out.hasSyn = !!(d.n_mentions && d.agent);
     d.key.forEach((k, j) => { out.key.push(k); out.name.push(d.name[j]); out.n.push(d.n_articles[j]); out.off.push(d.off_section ? d.off_section[j] : null);
+      out.neff.push(d.WW && d.WW[j] > 0 ? d.W[j] * d.W[j] / d.WW[j] : NaN);
+      out.share.push(d.n_mentions && d.n_mentions[j] >= PORTRAYED_N ? d.W[j] / d.n_mentions[j] : NaN);
+      out.syn.push(d.n_mentions && d.agent && d.n_mentions[j] >= PORTRAYED_N ? (d.agent[j] + (d.patient ? d.patient[j] : 0) + (d.obl ? d.obl[j] : 0)) / d.n_mentions[j] : NaN);
       for (const dm of DK) { const m = merge(d, [j], dm); out.R[dm].push(m ? m.R : NaN); out.se[dm].push(m ? m.se : NaN);
         if (out.E) out.E[dm].push(d.EW[j] > 0 ? d["E_" + dm][j] / d.EW[j] : NaN); } });
     return out;
@@ -1126,12 +1198,22 @@ function rankTable(t) {
   const col = (dm, suf) => at(...DIMA[dm].flatMap(a => [`${a}_${suf}`, `${suf}_${a}`]));
   const mi = Object.fromEntries(DK.map(dm => [dm, col(dm, "mean")])), si = Object.fromEntries(DK.map(dm => [dm, col(dm, "se")]));
   const ei = Object.fromEntries(DK.map(dm => [dm, col(dm, "expected")]));
+  // effective articles: an n_eff column, or W and WW pooled per person; the route’s SEs then get the same CR1 factor as merge()
+  const nei = at("n_eff", "neff"), wi = at("w", "sum_w"), wwi = at("ww", "sum_ww");
+  out.hasNeff = nei >= 0 || (wi >= 0 && wwi >= 0);
+  out.hasShare = at("relevance") >= 0 || (wi >= 0 && at("n_mentions") >= 0); out.hasSyn = at("syntax") >= 0 || (at("agent") >= 0 && at("n_mentions") >= 0);
   if (ki < 0 || ai < 0 || mi.valence < 0) throw new Error(`rankings_portraits: unexpected columns (${rows[0].join(", ")})`);
   if (DK.every(dm => ei[dm] >= 0)) { out.E = {}; for (const dm of DK) out.E[dm] = []; }
   const num = (r, j) => j < 0 || r[j] === "" || r[j] == null ? NaN : +r[j];
   for (const r of rows.slice(1)) { if (!r[ki]) continue;
     out.key.push(r[ki]); out.name.push(ni >= 0 ? r[ni] : null); out.n.push(num(r, ai)); out.off.push(oi >= 0 ? r[oi] : null);
-    for (const dm of DK) { out.R[dm].push(num(r, mi[dm])); out.se[dm].push(num(r, si[dm])); if (out.E) out.E[dm].push(num(r, ei[dm])); } }
+    const ne = nei >= 0 ? num(r, nei) : wi >= 0 && wwi >= 0 && num(r, wwi) > 0 ? num(r, wi) ** 2 / num(r, wwi) : NaN; out.neff.push(ne);
+    const mi_ = at("n_mentions"), nm = mi_ >= 0 ? num(r, mi_) : NaN, rel = at("relevance"), syi = at("syntax");
+    const ag = at("agent"), pa = at("patient"), ob = at("obl");
+    out.share.push(rel >= 0 ? num(r, rel) : wi >= 0 && nm >= PORTRAYED_N ? num(r, wi) / nm : NaN);
+    out.syn.push(syi >= 0 ? num(r, syi) : ag >= 0 && nm >= PORTRAYED_N ? ((num(r, ag) || 0) + (num(r, pa) || 0) + (num(r, ob) || 0)) / nm : NaN);
+    const cf = ne >= NEFF_MIN ? Math.sqrt(crFactor(ne)) : 1;
+    for (const dm of DK) { out.R[dm].push(num(r, mi[dm])); out.se[dm].push(num(r, si[dm]) * cf); if (out.E) out.E[dm].push(num(r, ei[dm])); } }
   return out;
 }
 function loadRanking() {
@@ -1193,6 +1275,88 @@ function mergeP(k, d, idx, dm) {
 const ADJ_NOTE = () => L("Relative scores: each value minus how the same newspapers, in the same years, treated the other people scored. 0 means treated like everyone else.",
   "Scores relatifs : chaque valeur moins le traitement que les mêmes journaux, les mêmes années, réservent aux autres personnes notées. 0 signifie traité comme les autres.");
 
+// Shrinkage for the ranking: the BLUP of a random-effects model fitted across the people of the list.
+// y_i = θ_i + e_i, e_i ~ N(0, s_i²) with s_i the cluster-robust standard error of the person’s average; θ_i ~ N(μ, τ²).
+// τ² by REML (Fisher scoring from the DerSimonian–Laird value), μ = Σ w y / Σ w with w = 1 / (τ² + s²).
+// BLUP: θ̂_i = μ + B_i (y_i − μ), B_i = τ² / (τ² + s_i²); prediction SE √(B_i s_i² + (1 − B_i)² / Σ w), which adds the
+// uncertainty on μ (not on τ²). People without a usable SE keep their plain average (B = null). Needs at least 5 people.
+function blup(y, se) {
+  const ok = []; y.forEach((x, i) => { if (Number.isFinite(x) && Number.isFinite(se[i]) && se[i] >= 0) ok.push(i); });
+  const k = ok.length; if (k < 5) return null;
+  const v = ok.map(i => Math.max(se[i] * se[i], 1e-12)), yy = ok.map(i => y[i]);
+  const at = t2 => { let S1 = 0, S2 = 0, S3 = 0, SY = 0;
+    for (let j = 0; j < k; j++) { const w = 1 / (v[j] + t2); S1 += w; S2 += w * w; S3 += w * w * w; SY += w * yy[j]; }
+    return {S1, S2, S3, mu: SY / S1}; };
+  let a = at(0), Q = 0; for (let j = 0; j < k; j++) Q += (yy[j] - a.mu) ** 2 / v[j];
+  let t2 = Math.max(0, (Q - (k - 1)) / (a.S1 - a.S2 / a.S1)), conv = false;
+  for (let it = 0; it < 500; it++) {
+    a = at(t2); let yPPy = 0; for (let j = 0; j < k; j++) { const w = 1 / (v[j] + t2); yPPy += w * w * (yy[j] - a.mu) ** 2; }
+    const trP = a.S1 - a.S2 / a.S1, trPP = a.S2 - 2 * a.S3 / a.S1 + (a.S2 / a.S1) ** 2;
+    const nt = Math.max(0, t2 + (yPPy - trP) / trPP);
+    if (Math.abs(nt - t2) <= 1e-10 * t2 + 1e-16) { t2 = nt; conv = true; break; }
+    t2 = nt;
+  }
+  if (!conv || !Number.isFinite(t2)) return null;
+  a = at(t2);
+  const theta = y.map(() => NaN), sp = y.map(() => NaN), B = y.map(() => null);
+  ok.forEach((i, j) => { const b = t2 / (t2 + v[j]); theta[i] = a.mu + b * (yy[j] - a.mu); sp[i] = Math.sqrt(b * v[j] + (1 - b) ** 2 / a.S1); B[i] = b; });
+  return {mu: a.mu, tau2: t2, k, theta, se: sp, B};
+}
+const pct = x => nf.format(Math.round(100 * x));
+// the dynamic line of the note under the ranking: the fitted μ, τ and the spread of the weights, for the score shown
+function blupNote(dm, people) {
+  const box = $("rk-blup-est"), f = RK.fit[dm], lab = DIMS[dm].label.toLowerCase();
+  if (!RK.blup) { box.textContent = L("Shrinkage is switched off (More options › Estimate): the dots are plain averages.", "La contraction est désactivée (Plus d’options › Estimation) : les points sont des moyennes simples."); return; }
+  if (!f) { box.textContent = L("Too few people in this list to estimate the spread between them: the dots are plain averages.", "Trop peu de personnes dans cette liste pour estimer l’écart entre elles : les points sont des moyennes simples."); return; }
+  const Bs = people.map(r => r[dm + "_B"]).filter(b => b != null).sort((x, y) => x - y);
+  if (!f.tau2) { box.textContent = L(`For ${lab} in this list, μ = ${fmt(f.mu)} and the estimated spread between people is 0: the gaps are no larger than chance, so everyone is pulled to μ.`,
+    `Pour ${lab} dans cette liste, μ = ${fmt(f.mu)} et l’écart estimé entre personnes est nul : les différences ne dépassent pas le hasard, et chacun est ramené à μ.`); return; }
+  const med = Bs[Math.floor((Bs.length - 1) / 2)], tau = dec(Math.sqrt(f.tau2).toFixed(3));
+  box.textContent = L(`For ${lab} in this list (${nf.format(f.k)} people): μ = ${fmt(f.mu)}, τ = ${tau} between people. The weight on each person’s own data runs from ${pct(Bs[0])}% to ${pct(Bs[Bs.length - 1])}% (median ${pct(med)}%).`,
+    `Pour ${lab} dans cette liste (${nf.format(f.k)} personnes) : μ = ${fmt(f.mu)}, τ = ${tau} entre personnes. Le poids des données propres de chaque personne va de ${pct(Bs[0])} % à ${pct(Bs[Bs.length - 1])} % (médiane ${pct(med)} %).`);
+}
+
+// Newspaper names picked up as people (« Le Monde », « Atlantico ») are left out of the ranking. A name is dropped when,
+// once normalised, it equals a newspaper of /newspapers_portraits (its code, « le_figaro », or its display name), with or
+// without spaces and with or without leading articles or prepositions: « Le Monde », « lemonde », « Monde », « du Parisien » all match.
+const OUTLET_ALIASES = ["journal du dimanche", "jdd", "nouvel observateur", "nouvel obs", "obs", "france soir", "telerama", "capital"];
+// leading articles and prepositions are stripped, repeatedly: « du Parisien », « de la Croix », « au Monde » → parisien, croix, monde
+const squash = k => k.replace(/ /g, ""), noArt = k => { let p; do { p = k; k = k.replace(/^(le|la|les|l|du|de|des|d|au|aux) /, ""); } while (k !== p && k); return k || p; };
+const OUTSET = {n: -1, set: null};
+function isOutletName(...names) {
+  const codes = [...new Set([...S.outlets, ...Object.keys(OUTLET_NAMES)])];
+  if (OUTSET.n !== codes.length) {
+    const set = new Set();
+    for (const c of [...codes.flatMap(o => [o.replace(/_/g, " "), OUTLET_NAMES[o] || ""]), ...OUTLET_ALIASES]) {
+      const k = key(c); if (k) { set.add(squash(k)); set.add(squash(noArt(k))); } }
+    OUTSET.n = codes.length; OUTSET.set = set;
+  }
+  return names.some(x => { if (!x) return false; const k = key(String(x)); return !!k && (OUTSET.set.has(squash(k)) || OUTSET.set.has(squash(noArt(k)))); });
+}
+
+// shrink each score across the people of the list (raw or relative, whichever is shown), then sort; the plain average stays
+// in <score>_raw. Starts again from the observed values, so it can be rerun on a smaller list.
+function shrinkSort(people) {
+  RK.fit = {};
+  for (const dm of Object.keys(DIMS)) {
+    for (const r of people) { r[dm] = r[dm + "_obs"]; r[dm + "_ci"] = r[dm + "_obsci"]; r[dm + "_raw"] = r[dm]; r[dm + "_B"] = null; }
+    if (!RK.blup) continue;
+    const f = blup(people.map(r => r[dm] ?? NaN), people.map(r => r[dm + "_se"])); if (!f) continue;
+    RK.fit[dm] = f;
+    people.forEach((r, j) => { if (f.B[j] == null) return; r[dm] = f.theta[j]; r[dm + "_ci"] = 1.96 * f.se[j]; r[dm + "_B"] = f.B[j]; });
+  }
+  people.sort((a, b) => b[RKS()] - a[RKS()]);
+}
+// one person checked against their own cells, within the selected period, sections and newspapers
+async function rankVerdict(k) {
+  let d; try { d = await loadName(k); } catch (e) { return {ok: true}; }   // cannot tell: kept
+  if (!d) return {ok: true};
+  const p = portrayal(d);
+  return {ok: !notPortrayed(p) && !(p.neff < RK.minEff), p};
+}
+// run f over items, n at a time
+async function pool(items, n, f) { let i = 0; await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => { while (i < items.length) await f(items[i++]); })); }
+
 async function drawRanking() {
   const box = $("rank");
   $("t-rank").textContent = EXT[RKS()][2];
@@ -1206,36 +1370,65 @@ async function drawRanking() {
   try { d = await whileBusy(["rank"], L("Computing the ranking…", "Calcul du classement…"), loadRanking); } catch (e) { if (my !== RK.tok) return; box.innerHTML = "";
     $("rk-sub").textContent = L(`The ranking could not be loaded from the API (${e.message}).`, `Le classement n’a pas pu être chargé depuis l’API (${e.message}).`); return; }
   if (my !== RK.tok) return;
-  const people = []; let nOff = 0, hasOff = false;
+  const people = []; let nOff = 0, hasOff = false, nPaper = 0, nThin = 0;
+  if (!d.hasNeff && !RK.warned) { RK.warned = true; console.warn("rankings_portraits sends no n_eff (or W and WW): entities resting on one or two articles cannot be screened out."); }
   d.key.forEach((k, j) => {
     const n = d.n[j]; if (!(n >= RK.min)) return;
+    if (isOutletName(k, d.name[j])) { nPaper++; return; }   // a newspaper, not a person
+    if (d.neff[j] < RK.minEff || d.share[j] < PORTRAYED_MIN || d.syn[j] < SYNTAX_MIN) { nThin++; return; }   // NaN (not sent by the route) passes
     const raw = d.off[j] ?? (S.byKey.has(k) ? S.index.names[S.byKey.get(k)][3] : null), off = offOf(raw);
     if (off != null) hasOff = true;
     if (off && RK.offHide) { nOff++; return; }
     const r = {i: j, n, name: d.name[j] || titleOf(k), key: k, off: !!off, offSec: off && !/^(1|true|yes|oui)$/i.test(String(raw).trim()) ? String(raw).trim() : null};
     if (!Number.isFinite(d.R[S.dim][j])) return;   // only the score picked above is drawn
     for (const dm of Object.keys(DIMS)) { const R = d.R[dm][j]; if (!Number.isFinite(R)) continue;
-      r[dm] = R; r[dm + "_ci"] = 1.96 * (d.se[dm][j] || 0);
-      if (S.adj && d.E && Number.isFinite(d.E[dm][j])) r[dm] -= d.E[dm][j]; }
+      r[dm] = R; r[dm + "_se"] = d.se[dm][j]; r[dm + "_ci"] = 1.96 * (d.se[dm][j] || 0);
+      if (S.adj && d.E && Number.isFinite(d.E[dm][j])) r[dm] -= d.E[dm][j];
+      r[dm + "_obs"] = r[dm]; r[dm + "_obsci"] = r[dm + "_ci"]; }
     people.push(r);
   });
+  setSeg("rk-blup", RK.blup ? "blup" : "raw");
+  // The route cannot tell bylines and one-article entities apart unless it sends n_eff, n_mentions and the syntactic roles.
+  // Without them, the names that end up at either end are checked against their own data (/portraits, cached), the fit is
+  // redone without the ones that fail, and so on until both ends are clean.
+  if (!(d.hasNeff && d.hasShare && d.hasSyn)) {
+    const vk = k => rankQ() + "|" + k, e0 = RK.ends;
+    for (let round = 0; round < 8; round++) {
+      const live = people.filter(r => (RK.verdict.get(vk(r.key)) || {ok: true}).ok);
+      shrinkSort(live);
+      const ends = live.length > 2 * e0 ? [...live.slice(0, e0), ...live.slice(-e0)] : live;
+      const todo = ends.filter(r => !RK.verdict.has(vk(r.key)));
+      if (!todo.length) break;
+      await whileBusy(["rank"], L("Checking the names at both ends…", "Vérification des noms aux deux bouts…"),
+        () => pool(todo, 6, async r => { RK.verdict.set(vk(r.key), await rankVerdict(r.key)); }));
+      if (my !== RK.tok) return;
+    }
+    const before = people.length;
+    for (let j = people.length - 1; j >= 0; j--) if (!(RK.verdict.get(vk(people[j].key)) || {ok: true}).ok) people.splice(j, 1);
+    nThin += before - people.length;
+  }
   const noRel = S.adj && !d.E;   // the route sends no baseline: raw scores, said so below
   setSeg("rk-off", RK.offHide ? "hide" : "show");
-  people.sort((a, b) => b[RKS()] - a[RKS()]);
+  shrinkSort(people);
+  const shrunk = RK.blup && !!RK.fit[S.dim];
   people.forEach((r, j) => r.rank = j + 1);
   const N = people.length, e = RK.ends, split = N > 2 * e, mid = split ? N - 2 * e : 0;
   const papers = S.oset ? L(`${S.oset.size} newspapers`, `${S.oset.size} journaux`) : L("all newspapers", "tous les journaux"), what = RKS() === "n" ? L("number of articles", "nombre d’articles") : DIMS[RKS()].label.toLowerCase();
   if (!N) { box.innerHTML = `<div class="empty">${L(`Nobody reaches ${nf.format(RK.min)} articles in ${S.y0}–${S.y1} with these newspapers.`, `Personne n’atteint ${nf.format(RK.min)} articles en ${S.y0}–${S.y1} avec ces journaux.`)}</div>`; $("rk-sub").textContent = ""; return; }
   $("rk-sub").textContent = L(`${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "person is" : "people are"} named in at least ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `All of them, ranked by ${what}; the ${e} at each end are marked.` : `Only the two ends are shown: the ${e} highest and the ${e} lowest by ${what}; the ${nf.format(mid)} in between are hidden.`)
-      : `All of them, ranked by ${what}.`) + ` Dots: ${DIMS[S.dim].label.toLowerCase()}, averages${S.ci ? " with 95% intervals" : ""}. Click a name to follow that person over time.`,
+      : `All of them, ranked by ${what}.`) + ` Dots: ${DIMS[S.dim].label.toLowerCase()}, ${shrunk ? "shrunk estimates (BLUP)" : "averages"}${S.ci ? " with 95% intervals" : ""}${shrunk ? "; rings: plain averages" : ""}. Click a name to follow that person over time.`,
     `${S.y0}–${S.y1}, ${papers} · ${nf.format(N)} ${N === 1 ? "personne est citée" : "personnes sont citées"} dans au moins ${nf.format(RK.min)} articles. ` +
     (split ? (RK.all ? `Toutes, classées par ${what} ; les ${e} de chaque bout sont signalées.` : `Seuls les deux bouts sont affichés : les ${e} plus hautes et les ${e} plus basses en ${what} ; les ${nf.format(mid)} du milieu sont masquées.`)
-      : `Toutes, classées par ${what}.`) + ` Points : ${DIMS[S.dim].label.toLowerCase()}, moyennes${S.ci ? " avec intervalles à 95 %" : ""}. Cliquez sur un nom pour suivre la personne dans le temps.`);
+      : `Toutes, classées par ${what}.`) + ` Points : ${DIMS[S.dim].label.toLowerCase()}, ${shrunk ? "estimations contractées (BLUP)" : "moyennes"}${S.ci ? " avec intervalles à 95 %" : ""}${shrunk ? " ; anneaux : moyennes simples" : ""}. Cliquez sur un nom pour suivre la personne dans le temps.`);
   if (nOff) $("rk-sub").textContent += " " + L(`${nf.format(nOff)} ${nOff === 1 ? "person" : "people"} mostly covered in other sections ${nOff === 1 ? "is" : "are"} hidden.`,
     `${nf.format(nOff)} ${nOff === 1 ? "personne surtout présente" : "personnes surtout présentes"} dans d’autres rubriques ${nOff === 1 ? "est masquée" : "sont masquées"}.`);
   else if (RK.offHide) $("rk-sub").textContent += " " + L("People mostly covered in other sections are left out.", "Les personnes surtout présentes dans d’autres rubriques sont exclues.");
   else if (people.some(r => r.off)) $("rk-sub").textContent += " " + L("In italics: people mostly covered in other sections.", "En italique : personnes surtout présentes dans d’autres rubriques.");
+  if (nThin) $("rk-sub").textContent += " " + L(`${nf.format(nThin)} ${nThin === 1 ? "entity is" : "entities are"} left out: ${nThin === 1 ? "its score rests" : "their scores rest"} on fewer than ${RK.minEff} effective articles, or on passages that are almost never about ${nThin === 1 ? "it" : "them"}.`,
+    `${nf.format(nThin)} ${nThin === 1 ? "entité est exclue : son score repose" : "entités sont exclues : leur score repose"} sur moins de ${RK.minEff} articles effectifs, ou sur des passages qui ne ${nThin === 1 ? "la" : "les"} concernent presque jamais.`);
+  if (nPaper) $("rk-sub").textContent += " " + L(`${nf.format(nPaper)} newspaper ${nPaper === 1 ? "name is" : "names are"} left out.`,
+    `${nf.format(nPaper)} ${nPaper === 1 ? "nom de journal est exclu" : "noms de journaux sont exclus"}.`);
   if (noRel) $("rk-sub").textContent += " " + L("Relative scores are not available in the ranking yet (the API sends no newspaper baseline): these are raw scores.",
     "Les scores relatifs ne sont pas encore disponibles dans le classement (l’API n’envoie pas la référence par journal) : ce sont des scores bruts.");
   else if (S.adj) $("rk-sub").textContent += " " + ADJ_NOTE();
@@ -1274,7 +1467,8 @@ async function drawRanking() {
   [[S.dim, DIMS[S.dim]]].forEach(([dm, p]) => {
     const x0 = left, on = true;
     const cz = S.ci ? 1 : 0;
-    let lo = Math.min(0, ...rows.map(({r}) => r[dm] - cz * r[dm + "_ci"])), hi = Math.max(0, ...rows.map(({r}) => r[dm] + cz * r[dm + "_ci"]));
+    const ring = ({r}) => shrunk && r[dm + "_B"] != null ? r[dm + "_raw"] : r[dm];
+    let lo = Math.min(0, ...rows.map(({r}) => r[dm] - cz * r[dm + "_ci"]), ...rows.map(ring)), hi = Math.max(0, ...rows.map(({r}) => r[dm] + cz * r[dm + "_ci"]), ...rows.map(ring));
     const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
     const X = v => x0 + (v - lo) / (hi - lo) * pw;
     svg.append(el("text", {class: "ttl", x: x0, y: 18, style: on ? "" : "font-weight:500;fill:var(--fg2)"}, p.label + (RK.byN ? L("  · rows ordered by number of articles", "  · lignes classées par nombre d’articles") : "")));
@@ -1285,6 +1479,7 @@ async function drawRanking() {
       svg.append(el("text", {x: X(v), y: AXY + 15, "text-anchor": "middle"}, z ? "0" : (v > 0 ? "+" : "−") + dec(+Math.abs(v).toFixed(3)))); }
     rows.forEach(({r, y: ry}) => { const y = ry + rowH / 2, si = S.sel.indexOf(r.key), col = si >= 0 ? css(SERIES[si]) : on ? fg : base;
       if (S.ci) svg.append(el("line", {x1: X(r[dm] - r[dm + "_ci"]), x2: X(r[dm] + r[dm + "_ci"]), y1: y, y2: y, stroke: col, "stroke-width": 2, "stroke-opacity": 0.45, "stroke-linecap": "round"}));
+      if (shrunk && r[dm + "_B"] != null) svg.append(el("circle", {cx: X(r[dm + "_raw"]), cy: y, r: 3.5, fill: "none", stroke: col, "stroke-width": 1.25, "stroke-opacity": 0.55}));
       svg.append(el("circle", {cx: X(r[dm]), cy: y, r: si >= 0 ? 5 : 4, fill: col, stroke: panel, "stroke-width": 2})); });
   });
   const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
@@ -1293,6 +1488,7 @@ async function drawRanking() {
     const show = ev => { const b = box.getBoundingClientRect();
       tipAt(box, tip, ev.clientX - b.left + box.scrollLeft, ev.clientY - b.top, `<b>${r.rank} ${L("of", "sur")} ${nf.format(N)}. ${esc(r.name)} · ${nf.format(r.n)} articles</b>` +
         Object.entries(DIMS).map(([dm, p]) => `<div class="r"><i></i><span>${p.label}</span><span class="v">${r[dm] != null ? fmt(r[dm]) + " ± " + dec(r[dm + "_ci"].toFixed(3)) : "–"}</span></div>`).join("") +
+        (shrunk && r[S.dim + "_B"] != null ? `<div class="r"><i></i><span class="n" style="grid-column:2/4">${L(`${DIMS[S.dim].label}: plain average ${fmt(r[S.dim + "_raw"])}, ${pct(r[S.dim + "_B"])}% weight on own data`, `${DIMS[S.dim].label} : moyenne simple ${fmt(r[S.dim + "_raw"])}, ${pct(r[S.dim + "_B"])} % de poids à ses propres données`)}</span></div>` : "") +
         (r.off ? `<div class="r"><i></i><span class="n" style="grid-column:2/4">${r.offSec ? L(`Mostly covered in ${secName(r.offSec)}`, `Surtout présent·e en ${secName(r.offSec)}`) : L("Mostly covered in other sections", "Surtout présent·e dans d’autres rubriques")}</span></div>` : "") +
         `<div class="r"><i></i><span class="n" style="grid-column:2/4">${(S.sel.includes(r.key) ? L("Selected · click to follow over time", "Sélectionnée · cliquez pour la suivre dans le temps") : S.sel.length >= MAXP ? L("Click to follow over time (replaces the last person)", "Cliquez pour la suivre dans le temps (remplace la dernière personne)") : L("Click to follow over time", "Cliquez pour la suivre dans le temps"))}</span></div>`); };
     hit.addEventListener("pointermove", show); hit.addEventListener("pointerleave", () => tip.hidden = true);
@@ -1300,6 +1496,7 @@ async function drawRanking() {
     svg.append(hit); });
   for (const it of items) if (it.node) svg.append(it.node);   // keep the "show everyone" link above the hit areas
   box.append(svg, tip);
+  blupNote(S.dim, people);
 }
 // vertical grid lines skip band labels and the gap
 function segments(items, y0, y1) {
@@ -1310,6 +1507,8 @@ function segments(items, y0, y1) {
 $("rk-off").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.offHide = b.dataset.v === "hide";
   try { localStorage.setItem("pp-off2", b.dataset.v); } catch (er) {} drawRanking(); });
 $("rk-n").addEventListener("change", e => { RK.ends = +e.target.value; drawRanking(); });
+$("rk-blup").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.blup = b.dataset.v === "blup";
+  try { localStorage.setItem("pp-blup", RK.blup ? "on" : "off"); } catch (er) {} drawRanking(); });
 $("rk-show").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.all = b.dataset.v === "all"; drawRanking(); });
 $("rk-min").addEventListener("change", e => { RK.min = +e.target.value; drawRanking(); });
 $("rk-sort").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; RK.byN = b.dataset.k === "n"; drawRanking(); });
@@ -1697,14 +1896,17 @@ async function render() {
   catch (e) { if (my === token) apiFail(e); return; }
   if (my !== token) return;
   apiOk(); renderChips();   // display names arrive with the data
+  const skipped = data.filter(x => unportrayed(x.d)); data = data.filter(x => !unportrayed(x.d));
   const per = `${S.y0}–${S.y1}`, papers = S.oset ? L(", in the selected newspapers", ", dans les journaux sélectionnés") : L(", all newspapers", ", tous les journaux");
   if (S.tab === "corpora") {
     if (!data.length) { for (const id of ["byout", "heat", "summary"]) $(id).innerHTML = `<div class="empty">${L("Add a person above to compare newspapers.", "Ajoutez une personne ci-dessus pour comparer les journaux.")}</div>`;
-      for (const id of ["out-sub", "heat-sub", "sum-sub"]) $(id).textContent = ""; $("heat-who").hidden = true; return; }
+      for (const id of ["out-sub", "heat-sub", "sum-sub"]) $(id).textContent = ""; $("heat-who").hidden = true;
+      if (skipped.length) $("out-sub").textContent = skipNote(skipped); return; }
     $("sum-sub").textContent = per + papers;
     let baseErr = null;
     if (S.adj) { try { await loadBase(); } catch (e) { baseErr = e.message; S.adj = false; setSeg("adj", "raw"); } if (my !== token) return; }
     drawOutlets(data); drawHeat(data); drawSummary(data);
+    if (skipped.length) $("out-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${esc(skipNote(skipped))}</span>`);
     if (baseErr) $("out-sub").textContent += " " + L(`Relative scores are unavailable (${baseErr}): raw scores shown.`, `Scores relatifs indisponibles (${baseErr}) : scores bruts affichés.`);
     if (S.adj) { if ($("out-sub").innerHTML) $("out-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
       if ($("heat-sub").innerHTML) $("heat-sub").insertAdjacentHTML("beforeend", `<span style="display:block;margin-top:6px">${ADJ_NOTE()}</span>`);
@@ -1733,12 +1935,13 @@ async function render() {
       `${fb.join(", ")} : tracé par année (pointillés), moins de 1 000 articles ne donnent pas de détail ${S.res === "quarter" ? "trimestriel" : "mensuel"}.`)
       + (filtered ? ` <button type="button" class="linkbtn" data-act="all">${L("Use all newspapers", "Prendre tous les journaux")}</button>` : "");
   } else hint.hidden = true;
-  if (!data.length) { $("timechart").innerHTML = `<div class="empty">${L("Add a person above to follow them over time.", "Ajoutez une personne ci-dessus pour la suivre dans le temps.")}</div>`; $("men").innerHTML = ""; $("men-sub").textContent = ""; $("ttable").innerHTML = ""; $("time-sub").textContent = ""; return; }
+  if (!data.length) { $("timechart").innerHTML = `<div class="empty">${L("Add a person above to follow them over time.", "Ajoutez une personne ci-dessus pour la suivre dans le temps.")}</div>`; $("men").innerHTML = ""; $("men-sub").textContent = ""; $("ttable").innerHTML = ""; $("time-sub").textContent = skipped.length ? skipNote(skipped) : ""; return; }
   $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}, ${S.res === "year" ? "yearly" : S.res === "quarter" ? "quarterly" : "monthly"} means${S.ci ? " with 95% intervals" : ""}${papers}. Drag across the chart to zoom, double-click to reset.`, `${per} · ${DIMS[S.dim].label}, moyennes ${S.res === "year" ? "annuelles" : S.res === "quarter" ? "trimestrielles" : "mensuelles"}${S.ci ? " avec intervalles à 95 %" : ""}${papers}. Faites glisser sur le graphique pour zoomer, double-cliquez pour revenir.`);
   $("men-sub").textContent = L(`${per} · Articles mentioning the person, ${S.res === "year" ? "per year" : S.res === "quarter" ? "per quarter" : "per month"}${papers}. Raw counts: the corpus grows over time, so contrasts between people are more meaningful than contrasts between years.`, `${per} · Articles mentionnant la personne, ${S.res === "year" ? "par an" : S.res === "quarter" ? "par trimestre" : "par mois"}${papers}. Comptes bruts : le volume du corpus augmente au cours du temps, les contrastes entre personnes sont donc plus pertinents que les contrastes entre années.`);
   if (gapOn()) $("time-sub").textContent = L(`${per} · ${DIMS[S.dim].label}: score in the selected newspapers minus the same person’s score in all other newspapers, ${S.res === "year" ? "each year" : S.res === "quarter" ? "each quarter" : "each month"}${S.ci ? ", with 95% intervals" : ""}. Above 0: ${DIMS[S.dim].pos} more here than elsewhere. A flat line means the person moved the same way everywhere.`,
     `${per} · ${DIMS[S.dim].label} : score dans les journaux sélectionnés moins le score de la même personne dans tous les autres journaux, ${S.res === "year" ? "chaque année" : S.res === "quarter" ? "chaque trimestre" : "chaque mois"}${S.ci ? ", avec intervalles à 95 %" : ""}. Au-dessus de 0 : ${DIMS[S.dim].pos}, plus ici qu’ailleurs. Une ligne plate signifie que la personne a évolué de la même façon partout.`);
   drawTime(data); drawMentions(data);
+  if (skipped.length) $("time-sub").textContent += " " + skipNote(skipped);
 }
 $("reshint").addEventListener("click", e => { if (e.target.closest("[data-act=all]")) setOutlets(new Set([...S.osel, ...availSet()])); });
 
@@ -1941,7 +2144,7 @@ const FR = {
   "People (up to six)": "Personnes (six au plus)", "Period": "Période", "to": "à", "Full period": "Toute la période",
   "Score": "Score", "Extremism": "Extrémisme", "Momentum": "Dynamique", "Hide points under": "Masquer les points sous",
   "2,000 articles": "2 000 articles", "10,000 articles": "10 000 articles",
-  "Rank by": "Classer par",  "Show": "Afficher", "Both ends": "Les deux bouts", "Everyone": "Tout le monde",
+  "Rank by": "Classer par",  "Show": "Afficher", "Estimate": "Estimation", "Shrunk (BLUP)": "Contractées (BLUP)", "Plain averages": "Moyennes simples", "Both ends": "Les deux bouts", "Everyone": "Tout le monde",
   "Each end": "À chaque bout", "10 people": "10 personnes", "15 people": "15 personnes", "25 people": "25 personnes", "At least": "Au moins",
   "Loading the ranking…": "Chargement du classement…",
   "By newspaper": "Par journal", "Order newspapers by": "Trier les journaux par", "Articles": "Articles", "Name": "Nom",
@@ -2023,14 +2226,23 @@ function toIndex(t) {
     if (rows.length < 2) throw new Error("names_portraits returned no names");
     const body = rows.slice(1).filter(r => r[ki]);
     names = body.map(r => [r[ki], mi >= 0 && r[mi] ? r[mi] : titleOf(r[ki]), ai >= 0 && r[ai] !== "" ? +r[ai] : null, oi >= 0 && r[oi] !== "" ? r[oi] : null, []]);
-    if (fi >= 0 && li >= 0) { let y0 = 1e4, y1 = 0; for (const r of body) { const f = +String(r[fi]).slice(0, 4), l = +String(r[li]).slice(0, 4); if (f && f < y0) y0 = f; if (l > y1) y1 = l; }
-      if (y1) years = [y0, y1]; }
+    if (fi >= 0 && li >= 0) { let y0 = 1e4, y1 = 0; for (const r of body) { const f = +String(r[fi]).slice(0, 4), l = +String(r[li]).slice(0, 4); if (okYear(f) && f < y0) y0 = f; if (okYear(l) && l > y1) y1 = l; }
+      if (y1 && y0 <= y1) years = [y0, y1]; }
   }
   // every entry: [key, name (text), articles (number or null), off_section, other spellings (array)]
   names = names.filter(e => e && e[0]).map(e => [String(e[0]), e[1] != null && e[1] !== "" ? String(e[1]) : titleOf(String(e[0])),
     e[2] != null && e[2] !== "" && Number.isFinite(+e[2]) ? +e[2] : null, e[3] ?? null, Array.isArray(e[4]) ? e[4] : []]);
   names.sort((a, b) => (b[2] || 0) - (a[2] || 0));   // the search keeps the first matches: most covered first
-  return {names, years: years || [1944, new Date().getFullYear()]};
+  return {names, years: saneYears(years)};
+}
+// The period slider spans the corpus: Le Monde from 1944 to this year. A malformed month in the data (« 0001-01 », a
+// stray day number) must not stretch it back to year 0, so years outside that span are ignored, and the span is clamped.
+const YEAR_FLOOR = 1944, YEAR_CEIL = () => new Date().getFullYear();
+const okYear = y => Number.isFinite(y) && y >= YEAR_FLOOR && y <= YEAR_CEIL() + 1;
+function saneYears(y) {
+  const a = Array.isArray(y) ? +y[0] : NaN, b = Array.isArray(y) ? +y[1] : NaN;
+  const lo = okYear(a) ? a : YEAR_FLOOR, hi = okYear(b) ? Math.min(b, YEAR_CEIL()) : YEAR_CEIL();
+  return lo <= hi ? [lo, hi] : [YEAR_FLOOR, YEAR_CEIL()];
 }
 Promise.allSettled([fetchText(NAMES_URL).then(toIndex), loadNewspapers()]).then(([ix, np]) => {
   if (np.status === "rejected") { console.warn("newspapers_portraits:", np.reason); S.outlets = []; S.npSecs = new Map(); }
